@@ -31,6 +31,12 @@ mod new_edge_case_tests;
 #[cfg(test)]
 mod extra_edge_case_tests;
 
+#[cfg(test)]
+mod enhanced_edge_case_tests;
+
+#[cfg(test)]
+mod new_edge_case_tests_extended;
+
 
 // Re-export key types at the crate level
 pub use compiler::{Compiler, CompilationResult};
