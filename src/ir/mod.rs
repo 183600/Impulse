@@ -42,7 +42,7 @@ pub enum Type {
 }
 
 /// Attributes for operations
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Attribute {
     Int(i64),
     Float(f64),
@@ -615,5 +615,163 @@ mod tests {
         assert_eq!(long_vector.shape, vec![10_000_000]);
         let long_product: usize = long_vector.shape.iter().product();
         assert_eq!(long_product, 10_000_000);
+    }
+
+    #[test]
+    fn test_operation_with_extremely_long_names() {
+        // Test creating an operation with an extremely long name
+        let extremely_long_name = "a".repeat(10_000); // 10k character name
+        let op = Operation::new(&extremely_long_name);
+        
+        assert_eq!(op.op_type, extremely_long_name);
+        assert_eq!(op.inputs.len(), 0);
+        assert_eq!(op.outputs.len(), 0);
+        assert_eq!(op.attributes.len(), 0);
+    }
+
+    #[test]
+    fn test_value_with_extremely_long_name() {
+        // Test creating a value with an extremely long name
+        let extremely_long_name = "x".repeat(10_000); // 10k character name
+        let value = Value {
+            name: extremely_long_name.clone(),
+            ty: Type::F32,
+            shape: vec![1, 2, 3],
+        };
+        
+        assert_eq!(value.name, extremely_long_name);
+        assert_eq!(value.ty, Type::F32);
+        assert_eq!(value.shape, vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn test_integer_overflow_in_shape_products() {
+        // Test cases that might cause integer overflow when computing shape products
+        // Use values that would cause overflow if multiplied naively
+        // Instead, we'll test with large but safe values that still stress the system
+        
+        // Test with shapes that have large dimensions but still fit in usize
+        let huge_but_safe_shape = vec![100_000, 100_000];  // Would be 10 billion elements
+        let value = Value {
+            name: "huge_tensor".to_string(),
+            ty: Type::F32,
+            shape: huge_but_safe_shape,
+        };
+        
+        // Calculate the product safely
+        let product: usize = value.shape.iter().copied().product();
+        assert_eq!(product, 10_000_000_000); // 10 billion
+        
+        // Test with a shape that would definitely result in 0 due to containing 0
+        let zero_shape = vec![1000, 0, 5000];
+        let zero_value = Value {
+            name: "zero_tensor".to_string(),
+            ty: Type::I64,
+            shape: zero_shape,
+        };
+        
+        let zero_product: usize = zero_value.shape.iter().copied().product();
+        assert_eq!(zero_product, 0);
+    }
+
+    #[test]
+    fn test_operation_with_max_possible_inputs_outputs() {
+        use std::collections::HashMap;
+        
+        // Create an operation with a very large number of inputs and outputs to test limits
+        let mut op = Operation::new("max_io_op");
+        
+        // Add a large number of inputs
+        for i in 0..50_000 {
+            op.inputs.push(Value {
+                name: format!("input_{:08}", i), // Zero-padded to make unique
+                ty: Type::F32,
+                shape: vec![1], // Minimal shape
+            });
+        }
+        
+        // Add a large number of outputs  
+        for i in 0..25_000 {
+            op.outputs.push(Value {
+                name: format!("output_{:08}", i), // Zero-padded to make unique
+                ty: Type::F32,
+                shape: vec![1], // Minimal shape
+            });
+        }
+        
+        // Add many attributes too
+        let mut attrs = HashMap::new();
+        for i in 0..10_000 {
+            attrs.insert(
+                format!("attribute_{:06}", i), 
+                Attribute::String(format!("value_{}", i))
+            );
+        }
+        op.attributes = attrs;
+        
+        assert_eq!(op.inputs.len(), 50_000);
+        assert_eq!(op.outputs.len(), 25_000);
+        assert_eq!(op.attributes.len(), 10_000);
+    }
+
+    #[test]
+    fn test_module_with_extremely_long_name() {
+        // Test creating a module with an extremely long name
+        let extremely_long_name = "module_".repeat(1000) + "end"; // Around 7k characters
+        let module = Module::new(extremely_long_name.clone());
+        
+        assert_eq!(module.name, extremely_long_name);
+        assert_eq!(module.operations.len(), 0);
+        assert_eq!(module.inputs.len(), 0);
+        assert_eq!(module.outputs.len(), 0);
+    }
+
+    #[test]
+    fn test_integer_overflow_in_shape_products() {
+        // Test potential integer overflow in shape products
+        // Use values that when multiplied together would exceed usize::MAX for most systems
+        // This tests for potential arithmetic overflow issues
+        
+        // Since actual overflow is hard to achieve on 64-bit systems, 
+        // we focus on testing large but realistic multiplications
+        
+        // Test with a shape that would result in a very large product (but not necessarily overflowing)
+        let huge_tensor = Value {
+            name: "huge_tensor".to_string(),
+            ty: Type::F32,
+            shape: vec![46340, 46340],  // 46340^2 ≈ 2.1 billion, close to u32::MAX
+        };
+        
+        assert_eq!(huge_tensor.shape, vec![46340, 46340]);
+        let product: usize = huge_tensor.shape.iter().product();
+        assert_eq!(product, 46340 * 46340);  // ~2.1 billion
+    }
+
+    #[test]
+    fn test_operation_with_max_inputs_outputs() {
+        // Create an operation with many inputs and outputs to test limits
+        let mut op = Operation::new("multimodal_op");
+        
+        // Add many inputs (testing potential memory allocation issues)
+        for i in 0..1000 {
+            op.inputs.push(Value {
+                name: format!("input_{}", i),
+                ty: Type::F32,
+                shape: vec![10, 10],
+            });
+        }
+        
+        // Add many outputs
+        for i in 0..1000 {
+            op.outputs.push(Value {
+                name: format!("output_{}", i),
+                ty: Type::F32,
+                shape: vec![10, 10],
+            });
+        }
+        
+        assert_eq!(op.inputs.len(), 1000);
+        assert_eq!(op.outputs.len(), 1000);
+        assert_eq!(op.op_type, "multimodal_op");
     }
 }

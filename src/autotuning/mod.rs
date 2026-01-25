@@ -340,4 +340,79 @@ mod tests {
         assert_eq!(search_space.num_warps_options, vec![1, 2, 4, 8, 16, 32]);
         assert_eq!(search_space.stages_options, vec![2, 3, 4, 5]);
     }
+
+    #[test]
+    fn test_generate_candidates_for_unsupported_operation() {
+        let tuner = AutoTuner::new();
+        
+        // Create an operation with an unsupported type
+        let op = Operation {
+            op_type: "unsupported_op".to_string(),
+            inputs: vec![],
+            outputs: vec![],
+            attributes: std::collections::HashMap::new(),
+        };
+        
+        let candidates = tuner.generate_candidates(&op).unwrap();
+        // Should return default parameters for unsupported ops
+        assert!(!candidates.is_empty());
+    }
+
+    #[test]
+    fn test_tuning_cache_behavior() {
+        let mut tuner = AutoTuner::new();
+        
+        let module = Module::new("test_cache_module");
+        let op = Operation::new("gemm");
+        
+        // Initially cache should be empty
+        assert_eq!(tuner.cache.len(), 0);
+        
+        // Tune the operation - this should populate the cache
+        let result = tuner.tune_operation(&op, &module);
+        assert!(result.is_ok());
+        
+        // Now cache should have one entry
+        assert_eq!(tuner.cache.len(), 1);
+        
+        // Generate the same key to ensure we can retrieve from cache
+        let key = tuner.generate_cache_key(&op, &module);
+        assert!(tuner.cache.contains_key(&key));
+    }
+
+    #[test]
+    fn test_extreme_parameter_generation() {
+        let tuner = AutoTuner::new();
+        
+        // Generate candidates for each operation type
+        let gemm_candidates = tuner.generate_gemm_candidates().unwrap();
+        let conv_candidates = tuner.generate_conv_candidates().unwrap();
+        let attention_candidates = tuner.generate_attention_candidates().unwrap();
+        let layernorm_candidates = tuner.generate_layernorm_candidates().unwrap();
+        
+        // Ensure all parameter spaces are populated
+        assert!(!gemm_candidates.is_empty());
+        assert!(!conv_candidates.is_empty());
+        assert!(!attention_candidates.is_empty());
+        assert!(!layernorm_candidates.is_empty());
+        
+        // Check that all candidates have valid positive parameters
+        for candidate in gemm_candidates {
+            if let TuneParams::Gemm { tile_m, tile_n, tile_k, vector_width } = candidate {
+                assert!(tile_m > 0);
+                assert!(tile_n > 0);
+                assert!(tile_k > 0);
+                assert!(vector_width > 0);
+            }
+        }
+        
+        for candidate in conv_candidates {
+            if let TuneParams::Conv { tile_h, tile_w, tile_c, vector_width } = candidate {
+                assert!(tile_h > 0);
+                assert!(tile_w > 0);
+                assert!(tile_c > 0);
+                assert!(vector_width > 0);
+            }
+        }
+    }
 }

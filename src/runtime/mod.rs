@@ -362,4 +362,46 @@ mod tests {
         let cpu_ctx = runtime.create_context(Some(Device::Cpu)).unwrap();
         assert_eq!(cpu_ctx.device, Device::Cpu);
     }
+
+    #[test]
+    fn test_memory_pool_fragmentation_with_many_allocations_deallocations() {
+        let mut ctx = ExecutionContext::new(Device::Cpu).unwrap();
+        
+        // Perform many allocations and deallocations to test memory management
+        let mut handles = Vec::new();
+        
+        // Allocate and store handles
+        for i in 0..100 {
+            let handle = ctx.allocate_tensor((i + 1) * 100).unwrap();
+            handles.push(handle);
+        }
+        
+        assert_eq!(handles.len(), 100);
+        
+        // Deallocate every other handle
+        for i in (0..handles.len()).step_by(2) {
+            let handle = handles[i].clone();  // Clone to avoid moving out of vector
+            ctx.memory_pool.deallocate(handle).unwrap();
+        }
+        
+        // Verify that remaining allocations are still tracked
+        assert_eq!(ctx.memory_pool.allocations.len(), 100);
+        
+        // Check that some allocations are marked as free
+        let free_count = ctx.memory_pool.allocations.values().filter(|alloc| alloc.free).count();
+        assert_eq!(free_count, 50);  // Half were freed
+    }
+
+    #[test]
+    fn test_runtime_enumerate_devices_edge_case() {
+        // Test runtime device enumeration
+        let runtime = Runtime::new();
+        
+        // At minimum, should have CPU device
+        assert!(!runtime.devices.is_empty());
+        assert!(runtime.devices.contains(&Device::Cpu));
+        
+        // Default device should be set
+        assert_eq!(runtime.default_device, runtime.devices[0]);
+    }
 }

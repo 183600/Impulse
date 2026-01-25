@@ -219,4 +219,68 @@ mod tests {
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Simulated pass failure"));
     }
+
+    #[test]
+    fn test_pass_manager_with_many_passes() {
+        // Test pass manager with a large number of passes
+        let mut pm = PassManager::new();
+        
+        // Add many passes to the manager
+        for i in 0..1000 {
+            struct TestPass {
+                id: u32,
+            }
+            
+            impl Pass for TestPass {
+                fn run(&self, module: &mut Module) -> Result<()> {
+                    // Modify module name to track execution
+                    module.name.push_str(&format!("_{}", self.id));
+                    Ok(())
+                }
+
+                fn name(&self) -> &'static str {
+                    "TestPass"
+                }
+            }
+            
+            pm.add_pass(Box::new(TestPass { id: i }));
+        }
+        
+        let mut module = Module::new("many_passes_test");
+        let result = pm.run_passes(&mut module);
+        assert!(result.is_ok());
+        
+        // Check that all passes were executed by verifying the long name
+        assert!(module.name.contains("_999"));  // Last pass should have run
+    }
+
+    #[test]
+    fn test_empty_pass_manager_with_complex_modules() {
+        let pm = PassManager::new();  // No passes added
+        
+        // Create a complex module with many operations
+        let mut module = Module::new("empty_pm_test");
+        for i in 0..1000 {
+            let mut op = crate::ir::Operation::new(&format!("op_{}", i));
+            op.inputs.push(Value {
+                name: format!("input_{}", i),
+                ty: Type::F32,
+                shape: vec![i % 100, (i + 1) % 100],
+            });
+            module.add_operation(op);
+        }
+        
+        assert_eq!(module.operations.len(), 1000);
+        
+        // Running passes on empty manager should not change the module
+        let original_name = module.name.clone();
+        let original_op_count = module.operations.len();
+        
+        let result = pm.run_passes(&mut module);
+        assert!(result.is_ok());
+        
+        // Module should be unchanged
+        assert_eq!(module.name, original_name);
+        assert_eq!(module.operations.len(), original_op_count);
+    }
 }

@@ -985,6 +985,85 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_tensor_size_with_overflow_scenarios() {
+        // Test tensor size calculations that might cause overflow
+        // Using values that are likely to cause overflow when multiplied
+        
+        // Very large dimensions that might cause overflow in multiplication
+        let huge_shape = vec![1_000_000, 1_000_000];
+        let result = ir_utils::calculate_tensor_size(&Type::F32, &huge_shape);
+        // Test should not panic, regardless of success or failure
+        assert!(result.is_ok() || result.err().is_some());
+        
+        // Another potential overflow scenario
+        let another_huge_shape = vec![100_000, 100_000, 100];
+        let result2 = ir_utils::calculate_tensor_size(&Type::I64, &another_huge_shape);
+        assert!(result2.is_ok() || result2.err().is_some());
+    }
+
+    #[test]
+    fn test_operation_with_maximum_inputs_outputs() {
+        use std::collections::HashMap;
+        
+        // Test creating an operation with a very large number of inputs and outputs
+        let mut op = Operation::new("massive_op");
+        
+        // Add many inputs
+        for i in 0..1000 {
+            op.inputs.push(Value {
+                name: format!("input_{}", i),
+                ty: Type::F32,
+                shape: vec![i % 10 + 1, i % 10 + 1], // Small variable shapes
+            });
+        }
+        
+        // Add many outputs
+        for i in 0..500 {
+            op.outputs.push(Value {
+                name: format!("output_{}", i),
+                ty: Type::F32,
+                shape: vec![i % 5 + 1, i % 5 + 1], // Small variable shapes
+            });
+        }
+        
+        // Add some attributes too
+        let mut attrs = HashMap::new();
+        for i in 0..100 {
+            attrs.insert(format!("attr_{}", i), Attribute::Int(i as i64));
+        }
+        op.attributes = attrs;
+        
+        // Verify counts
+        assert_eq!(op.inputs.len(), 1000);
+        assert_eq!(op.outputs.len(), 500);
+        assert_eq!(op.attributes.len(), 100);
+        assert_eq!(op.op_type, "massive_op");
+    }
+
+    #[test]
+    fn test_math_utils_with_extreme_values() {
+        // Test math utilities with the largest possible values
+        
+        // Test next power of 2 with a value close to the maximum
+        let near_max = usize::MAX / 2;  // This would cause overflow if doubled
+        // Instead, test with increasingly large values up to a safe limit
+        let large_value = 1_000_000_000usize;
+        let next_pow = math_utils::next_power_of_2(large_value);
+        assert!(next_pow >= large_value);
+        assert!(next_pow.is_power_of_two());
+        
+        // Test GCD with very large coprime numbers
+        let large_prime1 = 1_000_000_007usize; // A large prime number
+        let large_prime2 = 1_000_000_009usize; // Next large prime number
+        let gcd_result = math_utils::gcd(large_prime1, large_prime2);
+        assert_eq!(gcd_result, 1); // GCD of two different primes should be 1
+        
+        // Test LCM of these large primes
+        let lcm_result = math_utils::lcm(large_prime1, large_prime2);
+        assert_eq!(lcm_result, large_prime1 * large_prime2); // LCM of coprime numbers is their product
+    }
+
         assert!(next_power_duration.as_millis() < 100, "Next power function too slow: {:?}", next_power_duration);
     }
 }

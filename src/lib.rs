@@ -267,4 +267,57 @@ mod tests {
         // Note: The result may be success or failure depending on implementation,
         // but the important thing is that it doesn't panic
     }
+
+    #[test]
+    fn test_compiler_with_special_characters() {
+        let mut compiler = ImpulseCompiler::new();
+        let special_bytes = vec![0xFF, 0xFE, 0xFD]; // Some special byte sequences
+        
+        // Test that the compiler handles special characters without crashing
+        let _result = compiler.compile(&special_bytes, "cpu");
+    }
+
+    #[test]
+    fn test_compiler_with_unicode_like_bytes() {
+        let mut compiler = ImpulseCompiler::new();
+        // Bytes that look like UTF-8 sequences but aren't necessarily valid
+        let unicode_like = vec![0xC0, 0x80, 0xE0, 0x80, 0x80, 0xF0, 0x80, 0x80, 0x80];
+        
+        // Test that the compiler handles these bytes without crashing
+        let _result = compiler.compile(&unicode_like, "cpu");
+    }
+
+    #[rstest::rstest]
+    fn test_compiler_with_invalid_targets(#[values("cpu", "gpu", "invalid", "")] target: &str) {
+        let mut compiler = ImpulseCompiler::new();
+        let mock_model = vec![1u8, 2u8, 3u8];
+
+        // Test compilation with different target strings
+        let result = compiler.compile(&mock_model, target);
+        
+        // The result is expected to fail for most targets since functionality isn't implemented
+        // but it shouldn't panic
+        if !target.is_empty() && target != "cpu" {
+            // Targets other than "cpu" might fail differently
+            if result.is_err() {
+                let err_msg = result.unwrap_err().to_string();
+                assert!(err_msg.len() > 0);  // Should have some error message
+            }
+        }
+    }
+
+    #[test]
+    fn test_compiler_with_very_long_strings() {
+        let mut compiler = ImpulseCompiler::new();
+        
+        // Test with a very long target string to check for buffer issues
+        let very_long_target = "v".repeat(10000);
+        let mock_model = vec![1u8, 2u8, 3u8];
+        
+        let result = compiler.compile(&mock_model, &very_long_target);
+        if result.is_err() {
+            let err_msg = result.unwrap_err().to_string();
+            assert!(err_msg.len() > 0);
+        }
+    }
 }
