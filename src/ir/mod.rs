@@ -23,7 +23,7 @@ pub struct Operation {
 }
 
 /// A value in the computation graph (tensor/variable)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Value {
     pub name: String,
     pub ty: Type,

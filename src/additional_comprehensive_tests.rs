@@ -70,11 +70,11 @@ mod additional_edge_case_tests {
         }
         
         if let Some(Attribute::Float(zero_val)) = op.attributes.get("zero") {
-            assert!(zero_val == 0.0);
+            assert!(*zero_val == 0.0);
         }
         
         if let Some(Attribute::Float(neg_zero_val)) = op.attributes.get("neg_zero") {
-            assert!(neg_zero_val == -0.0);
+            assert!(*neg_zero_val == -0.0);
         }
         
         // Check for NaN specially
@@ -294,12 +294,99 @@ mod additional_edge_case_tests {
         
         assert_ne!(complex_type, different_shape);
     }
+
+    // Test 11: Type conversion/serialization edge cases
+    #[test]
+    fn test_serialization_deserialization() {
+        use serde_json;
+        
+        // Test serializing and deserializing complex structures
+        let original_value = Value {
+            name: "serialized_value".to_string(),
+            ty: Type::F32,
+            shape: vec![2, 3, 4],
+        };
+        
+        // Serialize to JSON
+        let serialized = serde_json::to_string(&original_value).unwrap();
+        
+        // Deserialize back
+        let deserialized: Value = serde_json::from_str(&serialized).unwrap();
+        
+        // Check that they're equal
+        assert_eq!(original_value, deserialized);
+        assert_eq!(original_value.name, deserialized.name);
+        assert_eq!(original_value.ty, deserialized.ty);
+        assert_eq!(original_value.shape, deserialized.shape);
+        
+        // Test with complex nested type
+        let complex_type = Type::Tensor {
+            element_type: Box::new(Type::Tensor {
+                element_type: Box::new(Type::I32),
+                shape: vec![2],
+            }),
+            shape: vec![3, 4],
+        };
+        
+        let serialized_complex = serde_json::to_string(&complex_type).unwrap();
+        let deserialized_complex: Type = serde_json::from_str(&serialized_complex).unwrap();
+        
+        assert_eq!(complex_type, deserialized_complex);
+    }
+
+    // Test 12: Module operations management edge cases
+    #[test]
+    fn test_module_operations_edge_cases() {
+        let mut module = Module::new("operations_test");
+        
+        // Test adding operations in bulk
+        for i in 0..1000 {
+            let op = Operation::new(&format!("bulk_op_{}", i));
+            module.add_operation(op);
+        }
+        
+        assert_eq!(module.operations.len(), 1000);
+        
+        // Test that first and last operations are as expected
+        assert_eq!(module.operations[0].op_type, "bulk_op_0");
+        assert_eq!(module.operations[999].op_type, "bulk_op_999");
+        
+        // Clear operations and test empty state
+        let empty_module = Module::new("still_has_name");
+        assert_eq!(empty_module.name, "still_has_name");
+        assert!(empty_module.operations.is_empty());
+    }
+
+    // Test 13: Recursive type validation with maximum nesting
+    #[test]
+    fn test_recursive_type_validation_limits() {
+        // Test creating a moderately deeply nested type to verify it works
+        let mut current_type = Type::F32;
+        
+        // Create nested type with 50 levels (reasonable for testing without stack overflow)
+        for i in 0..50 {
+            current_type = Type::Tensor {
+                element_type: Box::new(current_type),
+                shape: vec![i % 5 + 1], // Cycle through shapes 1-5
+            };
+        }
+        
+        // Validate that the deeply nested type is still valid
+        assert!(current_type.is_valid_type());
+        
+        // Test cloning of deeply nested type
+        let cloned = current_type.clone();
+        assert_eq!(current_type, cloned);
+        
+        // Validate the cloned one too
+        assert!(cloned.is_valid_type());
+    }
 }
 
 #[cfg(test)]
 mod rstest_additional_tests {
     use rstest::rstest;
-    use crate::ir::{Value, Type};
+    use crate::ir::{Value, Type, Attribute};
 
     // Parametrized test for different basic types
     #[rstest]
@@ -335,5 +422,27 @@ mod rstest_additional_tests {
         
         let actual_product: usize = value.shape.iter().product();
         assert_eq!(actual_product, expected_product);
+    }
+
+    // Parametrized test for attribute types
+    #[rstest]
+    #[case(Attribute::Int(42))]
+    #[case(Attribute::Float(3.14))]
+    #[case(Attribute::String("test".to_string()))]
+    #[case(Attribute::Bool(true))]
+    #[case(Attribute::Bool(false))]
+    fn test_attribute_types(#[case] original_attr: Attribute) {
+        // Test that each attribute can be matched and compared properly
+        match &original_attr {
+            Attribute::Int(v) => assert!(*v == 42),  // Only the Int(42) case will pass
+            Attribute::Float(v) => assert!((*v - 3.14).abs() < f64::EPSILON),  // Only the 3.14 case will pass
+            Attribute::String(s) => assert!(s == "test"),  // Only the "test" case will pass
+            Attribute::Bool(b) => assert!(*b == true || *b == false),  // Both true and false cases will pass
+            Attribute::Array(_) => {}  // This case won't be triggered by our test cases
+        }
+        
+        // More importantly, test that it can be cloned and compared to itself
+        let cloned = original_attr.clone();
+        assert_eq!(original_attr, cloned);
     }
 }
