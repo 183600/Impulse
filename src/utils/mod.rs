@@ -498,7 +498,7 @@ mod tests {
 
     #[test]
     fn test_timer() {
-        let timer = timing_utils::Timer::new("test_timer");
+        let _timer = timing_utils::Timer::new("test_timer");
         std::thread::sleep(std::time::Duration::from_millis(10));
         // The timer will print when dropped
     }
