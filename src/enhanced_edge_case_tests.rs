@@ -1,7 +1,6 @@
 //! Enhanced edge case tests for the Impulse compiler
 //! Covering additional boundary conditions not addressed in other test files
 
-use rstest::*;
 use crate::ir::{Value, Type, Operation, Attribute, Module};
 use std::collections::HashMap;
 
@@ -43,9 +42,6 @@ fn test_malformed_tensor_shape_handling() {
 /// Test 2: Hash collision resistance in attribute maps
 #[test]
 fn test_hash_collision_resistance() {
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-    
     let mut op = Operation::new("collision_test");
     let mut attrs = HashMap::new();
     
@@ -80,9 +76,10 @@ fn test_deep_recursion_without_stack_overflow() {
     }
     
     // Verify the structure can be handled without crashing
+    // At depth 999, shape will be [999 % 10 + 1] = [9 + 1] = [10]
     match &current_type {
         Type::Tensor { shape, .. } => {
-            assert_eq!(shape, &vec![9]); // 999 % 10 + 1 = 9
+            assert_eq!(shape, &vec![10]); // 999 % 10 + 1 = 10
         },
         _ => panic!("Expected tensor type after deep nesting"),
     }
@@ -92,10 +89,10 @@ fn test_deep_recursion_without_stack_overflow() {
     assert_eq!(current_type, cloned);
 }
 
-/// Test 4: Type conversion boundaries
+/// Test 4: Type construction boundaries
 #[test]
-fn test_type_conversion_boundaries() {
-    // Test various type transitions and boundary conditions
+fn test_type_construction_boundaries() {
+    // Test various type constructions and boundary conditions
     let types = [
         Type::F32, 
         Type::F64, 
@@ -104,29 +101,24 @@ fn test_type_conversion_boundaries() {
         Type::Bool
     ];
     
-    for (i, &from_type) in types.iter().enumerate() {
-        for (j, &to_type) in types.iter().enumerate() {
-            // Create a value with the "from" type
-            let value = Value {
-                name: format!("conversion_test_{}_{}", i, j),
-                ty: from_type.clone(),
-                shape: vec![1],
-            };
-            
-            // Verify creation succeeds regardless of type
-            assert_eq!(value.ty, from_type);
-            
-            // If types are the same, equality should hold
-            if i == j {
-                let same_value = Value {
-                    name: format!("conversion_test_{}_{}", i, j),
-                    ty: from_type.clone(),
-                    shape: vec![1],
-                };
-                // We can't directly compare values (no PartialEq), but we can check fields
-                assert_eq!(value.ty, same_value.ty);
-            }
-        }
+    for (i, from_type) in types.iter().enumerate() {
+        // Create a value with each type
+        let value = Value {
+            name: format!("construction_test_{}", i),
+            ty: from_type.clone(),
+            shape: vec![1],
+        };
+        
+        // Verify creation succeeds regardless of type
+        assert_eq!(value.ty, *from_type);
+        
+        // Test creating another value with same type
+        let same_type_value = Value {
+            name: format!("same_type_test_{}", i),
+            ty: from_type.clone(),
+            shape: vec![2],
+        };
+        assert_eq!(same_type_value.ty, *from_type);
     }
 }
 
