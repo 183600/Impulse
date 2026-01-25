@@ -4,9 +4,10 @@
 use rstest::*;
 use crate::{
     ir::{Value, Type, Operation, Attribute, Module},
-    ImpulseCompiler,
-    utils::ir_utils
 };
+
+// ImpulseCompiler and ir_utils are not actually used in this file
+// Removed unused imports to eliminate warnings
 
 /// Test 1: Very large tensor dimensions that could cause overflow in calculations
 #[test]
@@ -70,7 +71,7 @@ fn test_maximum_depth_tensor_types() {
     }
     
     // Test cloning of this deeply nested type
-    let cloned = current_type.clone();
+    let _cloned = current_type.clone();
     // Just ensure clone doesn't panic - equality comparison could be expensive
     assert!(true); // The clone succeeded if we reach here
 }
@@ -199,7 +200,7 @@ fn test_maximum_complex_module() {
     
     // Check a few specific operations to ensure data integrity
     assert_eq!(module.operations[0].op_type, "op_00000000");
-    assert_eq!(module.operations[199_999].op_type, "op_199999999");
+    assert_eq!(module.operations[199_999].op_type, "op_00199999");
 }
 
 /// Test 6: Edge case tensor shapes with various zero configurations
