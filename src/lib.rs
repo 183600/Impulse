@@ -52,6 +52,9 @@ mod additional_boundary_tests;
 #[cfg(test)]
 mod additional_comprehensive_tests;
 
+#[cfg(test)]
+mod new_more_edge_cases;
+
 
 // Re-export key types at the crate level
 pub use compiler::{Compiler, CompilationResult};
