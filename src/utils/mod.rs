@@ -1066,4 +1066,58 @@ mod tests {
         let lcm_result = math_utils::lcm(large_prime1, large_prime2);
         assert_eq!(lcm_result, large_prime1 * large_prime2); // LCM of coprime numbers is their product
     }
+
+    #[test]
+    fn test_tensor_size_calculation_with_specific_limits() {
+        use crate::ir::Type;
+        
+        // Test with maximum possible shape values that still allow calculation
+        // Use smaller values that won't overflow but still test boundary conditions
+        let almost_max_shape = vec![std::cmp::min(100_000, usize::MAX/4), 4];
+        let result = ir_utils::calculate_tensor_size(&Type::F32, &almost_max_shape);
+        assert!(result.is_ok());
+        if let Ok(size) = result {
+            let expected_size = almost_max_shape[0] * almost_max_shape[1] * 4;
+            assert_eq!(size, expected_size);
+        }
+        
+        // Test with various primitive types and zero dimensions
+        assert_eq!(ir_utils::calculate_tensor_size(&Type::F32, &[0]).unwrap(), 0);
+        assert_eq!(ir_utils::calculate_tensor_size(&Type::F64, &[5, 0, 10]).unwrap(), 0);
+        assert_eq!(ir_utils::calculate_tensor_size(&Type::I32, &[0, 5]).unwrap(), 0);
+        assert_eq!(ir_utils::calculate_tensor_size(&Type::I64, &[10, 20, 0]).unwrap(), 0);
+        
+        // Test with bool tensors and zero dimensions
+        assert_eq!(ir_utils::calculate_tensor_size(&Type::Bool, &[0]).unwrap(), 0);
+    }
+
+    #[test]
+    fn test_nested_tensor_size_with_various_depths() {
+        use crate::ir::Type;
+        
+        // Create a nested tensor type: tensor<tensor<f32, [2,2]>, [3]>
+        let nested_type = Type::Tensor {
+            element_type: Box::new(Type::Tensor {
+                element_type: Box::new(Type::F32),
+                shape: vec![2, 2],
+            }),
+            shape: vec![3],
+        };
+        
+        // Calculate size when outer shape is [4]: 4 * 3 * 2 * 2 * 4 = 192
+        let size = ir_utils::calculate_tensor_size(&nested_type, &[4]).unwrap();
+        assert_eq!(size, 4 * 3 * 2 * 2 * 4); // 192
+        
+        // Calculate size when outer shape is [] (scalar): 1 * 3 * 2 * 2 * 4 = 48
+        let size_scalar = ir_utils::calculate_tensor_size(&nested_type, &[]).unwrap();
+        assert_eq!(size_scalar, 1 * 3 * 2 * 2 * 4); // 48
+        
+        // Create shallower nesting: tensor<f32, [5,5]> with outer shape [2]
+        let shallow_nested = Type::Tensor {
+            element_type: Box::new(Type::F32),
+            shape: vec![5, 5],
+        };
+        let shallow_size = ir_utils::calculate_tensor_size(&shallow_nested, &[2]).unwrap();
+        assert_eq!(shallow_size, 2 * 5 * 5 * 4); // 200
+    }
 }
