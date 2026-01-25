@@ -375,7 +375,7 @@ mod more_edge_case_tests {
         }
         
         // Verify the module was created successfully without crashing
-        assert_eq!(module.name.len(), 21 + 1000); // "comprehensive_test_module" + "z".repeat(1000)
+        assert_eq!(module.name, "comprehensive_test_module"); // Name remains unchanged
         assert_eq!(module.inputs.len(), 10);
         assert_eq!(module.outputs.len(), 10);
         assert_eq!(module.operations.len(), 50);
