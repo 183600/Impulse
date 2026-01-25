@@ -1,11 +1,8 @@
 //! Additional edge case tests for the Impulse compiler - Part 2
 //! More comprehensive test cases beyond the first set
 
-use crate::ImpulseCompiler;
-
 #[cfg(test)]
 mod tests {
-    use super::*;
     use rstest::rstest;
     use crate::ir::{Module, Operation, Value, Type, Attribute};
     use std::collections::HashMap;

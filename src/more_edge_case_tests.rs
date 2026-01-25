@@ -3,8 +3,7 @@
 
 #[cfg(test)]
 mod more_edge_case_tests {
-    use rstest::*;
-    use crate::{ir::{Module, Value, Type, Operation, Attribute}, ImpulseCompiler};
+    use crate::ir::{Module, Value, Type, Operation, Attribute};
 
     /// Test 1: Operations with extremely large integer values as attributes
     #[test]

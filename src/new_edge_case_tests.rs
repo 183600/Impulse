@@ -362,6 +362,7 @@ mod new_edge_case_tests {
         
         // Verify all were created properly
         for (i, compiler) in compilers.iter().enumerate() {
+            let _ = i; // Suppress unused variable warning
             assert_eq!(compiler.passes.passes.len(), 0);
             assert_eq!(compiler.frontend.name(), "Frontend");
         }
@@ -407,5 +408,9 @@ mod new_edge_case_tests {
             let total_elements: usize = bool_value.shape.iter().product();
             assert!(total_elements > 0 || shape.is_empty()); // Empty shape is scalar (1 element)
         }
+        
+        // Use the expected_behavior parameter in validation
+        let is_expected_to_have_elements = !shape.iter().any(|&dim| dim == 0) || shape.is_empty();
+        assert_eq!(is_expected_to_have_elements, expected_behavior);
     }
 }
