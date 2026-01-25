@@ -2,7 +2,7 @@
 //! This file includes comprehensive tests for boundary conditions and error scenarios
 
 use crate::{
-    ir::{Module, Value, Type, Operation, Attribute},
+    ir::{Module, Value, Type, Operation, Attribute, TypeExtensions},
     ImpulseCompiler,
 };
 
@@ -16,12 +16,12 @@ mod tests {
     fn test_operations_with_max_numeric_values() {
         // Test attribute with maximum i64 value
         let max_int_attr = Attribute::Int(i64::MAX);
-        let min_int_attr = Attribute::Int(i64::MIN);
+        let _min_int_attr = Attribute::Int(i64::MIN);
         
         // Test attribute with maximum f64 value
         let max_float_attr = Attribute::Float(f64::MAX);
-        let min_float_attr = Attribute::Float(f64::MIN);
-        let epsilon_float_attr = Attribute::Float(f64::EPSILON);
+        let _min_float_attr = Attribute::Float(f64::MIN);
+        let _epsilon_float_attr = Attribute::Float(f64::EPSILON);
         
         // Verify the maximum values are stored correctly
         match max_int_attr {
@@ -55,8 +55,8 @@ mod tests {
             Attribute::Float(f64::NAN),
             Attribute::Float(0.0),
             Attribute::Float(-0.0),
-            Attribute::Float(f64::consts::PI),
-            Attribute::Float(f64::consts::E),
+            Attribute::Float(std::f64::consts::PI),
+            Attribute::Float(std::f64::consts::E),
         ];
         
         let mut op = Operation::new("special_float_op");
@@ -153,12 +153,12 @@ mod tests {
         let huge_tensor = Value {
             name: "huge_tensor".to_string(),
             ty: Type::F32,
-            shape: vec![1_000_000, 1_000],  // 1 trillion elements
+            shape: vec![1_000_000, 1_000],  // 1 billion elements
         };
         
         assert_eq!(huge_tensor.shape, vec![1_000_000, 1_000]);
         let product: usize = huge_tensor.shape.iter().product();
-        assert_eq!(product, 1_000_000_000_000);  // 1 trillion
+        assert_eq!(product, 1_000_000_000);  // 1 billion (avoiding overflow)
         
         // Verify that the value object was created successfully
         assert_eq!(huge_tensor.name, "huge_tensor");
@@ -192,7 +192,7 @@ mod tests {
             assert_eq!(op.op_type, *name);
             
             // And modules
-            let module = Module::new(name);
+            let module = Module::new(name.to_string());
             assert_eq!(module.name, *name);
         }
     }
