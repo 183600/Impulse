@@ -3,7 +3,7 @@
 
 use rstest::*;
 use crate::{
-    ir::{Value, Type, Operation, Attribute, Module},
+    ir::{Value, Type, Operation, Attribute, Module, TypeExtensions},
 };
 
 // ImpulseCompiler and ir_utils are not actually used in this file
@@ -376,23 +376,4 @@ fn test_resource_duplication_scenarios() {
     assert_eq!(modules[99].name, "test_module_99");
     assert_eq!(modules[0].operations.len(), 1000);
     assert_eq!(modules[99].operations.len(), 1000);
-}
-
-// Helper trait and implementation to extend Type functionality for testing
-trait TypeExtensions {
-    fn is_valid_type(&self) -> bool;
-}
-
-impl TypeExtensions for Type {
-    fn is_valid_type(&self) -> bool {
-        match self {
-            Type::F32 | Type::F64 | Type::I32 | Type::I64 | Type::Bool => true,
-            Type::Tensor { element_type, shape } => {
-                // Recursively validate the nested type
-                element_type.is_valid_type() && 
-                // Ensure shape doesn't contain obviously invalid values (though 0 is valid)
-                shape.iter().all(|&d| d <= usize::MAX)
-            }
-        }
-    }
 }

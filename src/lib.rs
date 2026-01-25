@@ -16,6 +16,9 @@ pub mod autotuning;
 #[cfg(test)]
 mod additional_edge_case_tests;
 
+#[cfg(test)]
+mod edge_case_tests;
+
 // Re-export key types at the crate level
 pub use compiler::{Compiler, CompilationResult};
 pub use ir::{Module, Operation, Value, Type};

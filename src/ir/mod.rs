@@ -41,6 +41,25 @@ pub enum Type {
     Tensor { element_type: Box<Type>, shape: Vec<usize> },
 }
 
+/// Extension trait for Type operations
+pub trait TypeExtensions {
+    fn is_valid_type(&self) -> bool;
+}
+
+impl TypeExtensions for Type {
+    fn is_valid_type(&self) -> bool {
+        match self {
+            Type::F32 | Type::F64 | Type::I32 | Type::I64 | Type::Bool => true,
+            Type::Tensor { element_type, shape } => {
+                // Recursively validate the nested type
+                element_type.is_valid_type() && 
+                // Ensure shape doesn't contain obviously invalid values (though 0 is valid)
+                shape.iter().all(|&d| d <= usize::MAX)
+            }
+        }
+    }
+}
+
 /// Attributes for operations
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Attribute {
