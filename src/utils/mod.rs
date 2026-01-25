@@ -27,7 +27,7 @@ pub mod ir_utils {
             },
             Type::Bool => {
                 let num_elements: usize = shape.iter().copied().product();
-                Ok(num_elements * 1)  // Boolean typically takes 1 byte
+                Ok(num_elements)  // Boolean typically takes 1 byte
             },
             Type::Tensor { element_type, shape: inner_shape } => {
                 // For tensor types, multiply the outer shape by the inner shape

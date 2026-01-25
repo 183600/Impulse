@@ -50,12 +50,9 @@ impl TypeExtensions for Type {
     fn is_valid_type(&self) -> bool {
         match self {
             Type::F32 | Type::F64 | Type::I32 | Type::I64 | Type::Bool => true,
-            Type::Tensor { element_type, shape } => {
+            Type::Tensor { element_type, .. } => {
                 // Recursively validate the nested type
-                element_type.is_valid_type() && 
-                // Ensure shape is valid (for now we just check if there's nothing wrong with the values)
-                // usize::MAX is valid for dimensions, so just ensure non-negativity (which is implicit in usize)
-                !shape.is_empty() || true  // All shapes are currently valid as they're usize
+                element_type.is_valid_type()
             }
         }
     }
