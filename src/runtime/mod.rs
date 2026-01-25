@@ -238,4 +238,128 @@ mod tests {
         let ctx = ExecutionContext::new(Device::Cpu).unwrap();
         assert_eq!(ctx.device, Device::Cpu);
     }
+    
+    #[test]
+    fn test_device_equality() {
+        let cpu1 = Device::Cpu;
+        let cpu2 = Device::Cpu;
+        assert_eq!(cpu1, cpu2);
+        
+        let cuda0_1 = Device::Cuda { device_id: 0 };
+        let cuda0_2 = Device::Cuda { device_id: 0 };
+        assert_eq!(cuda0_1, cuda0_2);
+        
+        let cuda0 = Device::Cuda { device_id: 0 };
+        let cuda1 = Device::Cuda { device_id: 1 };
+        assert_ne!(cuda0, cuda1);
+    }
+
+    #[test]
+    fn test_execution_context_and_memory_pool_functionality() {
+        let mut ctx = ExecutionContext::new(Device::Cpu).unwrap();
+        
+        // Test basic allocation and deallocation
+        let handle1 = ctx.allocate_tensor(1024).unwrap();  // 1KB allocation
+        assert!(handle1.size >= 1024);
+        
+        let handle2 = ctx.allocate_tensor(2048).unwrap();  // 2KB allocation
+        assert!(handle2.size >= 2048);
+        
+        // Verify IDs are different
+        assert_ne!(handle1.id, handle2.id);
+        
+        // Test that the handles are associated with the correct device
+        assert_eq!(handle1.device, Device::Cpu);
+        assert_eq!(handle2.device, Device::Cpu);
+        
+        // Test memory pool allocation/deallocation
+        let pool_size_before = ctx.memory_pool.allocations.len();
+        let handle3 = ctx.allocate_tensor(512).unwrap();
+        assert_eq!(ctx.memory_pool.allocations.len(), pool_size_before + 1);
+        
+        let handle3_id = handle3.id;  // Store the ID before moving handle3
+        // Test deallocating
+        let result = ctx.memory_pool.deallocate(handle3);
+        assert!(result.is_ok());
+        // Check that the allocation is marked as free (but still in the map)
+        if let Some(alloc) = ctx.memory_pool.allocations.get(&handle3_id) {
+            assert!(alloc.free);
+        }
+    }
+
+    #[test]
+    fn test_memory_pool_large_allocations() {
+        let mut ctx = ExecutionContext::new(Device::Cpu).unwrap();
+        
+        // Test with different allocation sizes
+        let small_alloc = ctx.allocate_tensor(1).unwrap();  // Smallest possible
+        assert!(small_alloc.size >= 1);
+        
+        let medium_alloc = ctx.allocate_tensor(1024 * 10).unwrap();  // 10KB
+        assert!(medium_alloc.size >= 1024 * 10);
+        
+        let large_alloc = ctx.allocate_tensor(1024 * 1024).unwrap();  // 1MB
+        assert!(large_alloc.size >= 1024 * 1024);
+        
+        // Ensure all allocations are different
+        assert_ne!(small_alloc.id, medium_alloc.id);
+        assert_ne!(small_alloc.id, large_alloc.id);
+        assert_ne!(medium_alloc.id, large_alloc.id);
+    }
+
+    #[test]
+    fn test_execution_stream_functionality() {
+        let device = Device::Cpu;
+        
+        let stream = ExecutionStream::new(&device).unwrap();
+        assert_eq!(stream.device, Device::Cpu);
+        
+        // Test synchronization
+        let sync_result = stream.sync();
+        assert!(sync_result.is_ok());
+    }
+
+    #[test]
+    fn test_runtime_cache_functionality() {
+        let mut runtime = Runtime::new();
+        
+        // Initial state
+        assert!(runtime.get_cached_module("nonexistent_key").is_none());
+        
+        // Add a module to cache
+        let test_module = vec![1u8, 2u8, 3u8, 4u8];
+        runtime.cache_module("test_key".to_string(), test_module.clone());
+        
+        // Retrieve from cache
+        let cached = runtime.get_cached_module("test_key").unwrap();
+        assert_eq!(cached, &test_module);
+        
+        // Check that a different key still returns None
+        assert!(runtime.get_cached_module("other_key").is_none());
+        
+        // Add more modules
+        runtime.cache_module("key2".to_string(), vec![5u8, 6u8]);
+        assert!(runtime.get_cached_module("key2").is_some());
+        
+        // Check total cache size
+        assert_eq!(runtime.module_cache.len(), 2);
+    }
+
+    #[test]
+    fn test_runtime_create_context() {
+        let runtime = Runtime::new();
+        
+        // Create context with default device
+        let ctx_default = runtime.create_context(None).unwrap();
+        assert_eq!(ctx_default.device, runtime.default_device);
+        
+        // Create context with specific device
+        let custom_ctx = runtime.create_context(Some(Device::Cpu)).unwrap();
+        assert_eq!(custom_ctx.device, Device::Cpu);
+        
+        // If CUDA feature is enabled, we could test with CUDA device too
+        // But for now, test with CPU
+        let cpu_ctx = runtime.create_context(Some(Device::Cpu)).unwrap();
+        assert_eq!(cpu_ctx.device, Device::Cpu);
+    }
 }

@@ -81,3 +81,142 @@ impl Pass for OperatorFusionPass {
         "OperatorFusionPass"
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::{Module, Value, Type};
+
+    #[test]
+    fn test_pass_manager_creation() {
+        let pm = PassManager::new();
+        assert_eq!(pm.passes.len(), 0);
+    }
+
+    #[test]
+    fn test_pass_manager_add_pass() {
+        let mut pm = PassManager::new();
+        pm.add_pass(Box::new(ConstantFoldPass));
+        assert_eq!(pm.passes.len(), 1);
+    }
+
+    #[test]
+    fn test_pass_manager_run_passes() {
+        let mut pm = PassManager::new();
+        pm.add_pass(Box::new(ConstantFoldPass));
+        pm.add_pass(Box::new(DeadCodeEliminationPass));
+        
+        let mut module = Module::new("test_module");
+        // Add a simple test operation to the module
+        let mut test_op = crate::ir::Operation::new("test_op");
+        test_op.inputs.push(Value {
+            name: "input1".to_string(),
+            ty: Type::F32,
+            shape: vec![1, 2],
+        });
+        module.add_operation(test_op);
+        
+        let result = pm.run_passes(&mut module);
+        assert!(result.is_ok());
+        assert_eq!(module.operations.len(), 1); // Should still have the operation
+    }
+
+    #[test]
+    fn test_pass_manager_empty() {
+        let pm = PassManager::new();
+        let mut module = Module::new("empty_test_module");
+        
+        let result = pm.run_passes(&mut module);
+        assert!(result.is_ok());
+        assert_eq!(module.operations.len(), 0);
+    }
+
+    #[test]
+    fn test_constant_fold_pass() {
+        let pass = ConstantFoldPass;
+        assert_eq!(pass.name(), "ConstantFoldPass");
+        
+        let mut module = Module::new("const_fold_test");
+        let result = pass.run(&mut module);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_dead_code_elimination_pass() {
+        let pass = DeadCodeEliminationPass;
+        assert_eq!(pass.name(), "DeadCodeEliminationPass");
+        
+        let mut module = Module::new("dce_test");
+        let result = pass.run(&mut module);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_operator_fusion_pass() {
+        let pass = OperatorFusionPass;
+        assert_eq!(pass.name(), "OperatorFusionPass");
+        
+        let mut module = Module::new("fusion_test");
+        let result = pass.run(&mut module);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pass_execution_order() {
+        // Create a custom pass for testing order
+        struct OrderTestPass {
+            id: u32,
+        }
+        
+        impl Pass for OrderTestPass {
+            fn run(&self, module: &mut Module) -> Result<()> {
+                // Add the pass ID to the module name to track execution order
+                module.name.push_str(&format!("_{}", self.id));
+                Ok(())
+            }
+
+            fn name(&self) -> &'static str {
+                "OrderTestPass"
+            }
+        }
+
+        let mut pm = PassManager::new();
+        pm.add_pass(Box::new(OrderTestPass { id: 1 }));
+        pm.add_pass(Box::new(OrderTestPass { id: 2 }));
+        pm.add_pass(Box::new(OrderTestPass { id: 3 }));
+
+        let mut module = Module::new("order_test");
+        pm.run_passes(&mut module).unwrap();
+
+        // The order should be preserved: 1, 2, 3
+        assert_eq!(module.name, "order_test_1_2_3");
+    }
+
+    #[test]
+    fn test_pass_with_failure_simulation() {
+        // Create a pass that fails to test error handling
+        struct FailingPass;
+        
+        impl Pass for FailingPass {
+            fn run(&self, _module: &mut Module) -> Result<()> {
+                anyhow::bail!("Simulated pass failure")
+            }
+
+            fn name(&self) -> &'static str {
+                "FailingPass"
+            }
+        }
+
+        let mut pm = PassManager::new();
+        pm.add_pass(Box::new(ConstantFoldPass));
+        pm.add_pass(Box::new(FailingPass));
+        pm.add_pass(Box::new(DeadCodeEliminationPass));
+
+        let mut module = Module::new("failure_test");
+        let result = pm.run_passes(&mut module);
+
+        // The failure should propagate
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Simulated pass failure"));
+    }
+}

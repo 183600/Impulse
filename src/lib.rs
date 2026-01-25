@@ -161,4 +161,110 @@ mod tests {
         assert!(op.attributes.contains_key("padding"));
         assert!(op.attributes.contains_key("stride"));
     }
+
+    #[test]
+    fn test_module_creation_and_operation_management() {
+        // Test creating a module and managing operations
+        let mut module = Module::new("test_module_ops");
+        
+        // Initially empty
+        assert_eq!(module.operations.len(), 0);
+        assert_eq!(module.name, "test_module_ops");
+        
+        // Add an operation
+        let op1 = Operation::new("add");
+        module.add_operation(op1);
+        assert_eq!(module.operations.len(), 1);
+        
+        // Add more operations
+        let op2 = Operation::new("multiply");
+        module.add_operation(op2);
+        
+        let op3 = Operation::new("relu");
+        module.add_operation(op3);
+        
+        assert_eq!(module.operations.len(), 3);
+        
+        // Verify the order
+        assert_eq!(module.operations[0].op_type, "add");
+        assert_eq!(module.operations[1].op_type, "multiply");
+        assert_eq!(module.operations[2].op_type, "relu");
+
+        // Test with operations that have inputs and outputs
+        let mut complex_op = Operation::new("matmul");
+        complex_op.inputs.push(Value {
+            name: "matrix_a".to_string(),
+            ty: Type::F32,
+            shape: vec![10, 20],
+        });
+        complex_op.outputs.push(Value {
+            name: "result".to_string(),
+            ty: Type::F32,
+            shape: vec![10, 30], // Assuming matrix multiplication A[10,20] * B[20,30]
+        });
+        
+        module.add_operation(complex_op);
+        assert_eq!(module.operations.len(), 4);
+        
+        // Check the complex operation
+        let last_op = &module.operations[3];
+        assert_eq!(last_op.op_type, "matmul");
+        assert_eq!(last_op.inputs.len(), 1);
+        assert_eq!(last_op.outputs.len(), 1);
+        assert_eq!(last_op.inputs[0].name, "matrix_a");
+        assert_eq!(last_op.outputs[0].name, "result");
+    }
+
+    #[test]
+    fn test_impulse_compiler_functionality() {
+        // Test the main compiler interface
+        let mut compiler = ImpulseCompiler::new();
+        
+        // Check that components are properly initialized
+        assert_eq!(compiler.passes.passes.len(), 0);
+        
+        // Test the compile method with empty model (expected to fail gracefully with meaningful error)
+        let empty_model = vec![];
+        let result = compiler.compile(&empty_model, "cpu");
+        
+        // The result may be an error (which is acceptable for an empty model)
+        // The important thing is that the interface works without panicking
+        if result.is_err() {
+            let err_msg = result.unwrap_err().to_string();
+            // Make sure it's a reasonable error message (not a panic or system crash)
+            assert!(err_msg.len() > 0);  // Should have some error message
+        }
+        
+        // Test compiler with mock data
+        let mock_model_data = vec![1u8, 2u8, 3u8, 4u8];
+        let result2 = compiler.compile(&mock_model_data, "cpu");
+        
+        if result2.is_err() {
+            let err_msg = result2.unwrap_err().to_string();
+            assert!(err_msg.len() > 0);
+        }
+    }
+    
+    #[test]
+    fn test_compiler_with_large_model() {
+        // Test with a large model to check memory handling
+        let mut compiler = ImpulseCompiler::new();
+        let large_model = vec![0u8; 10_000_000]; // 10MB model
+        
+        // Test that the compiler handles large input without crashing
+        let _result = compiler.compile(&large_model, "cpu");
+        // Note: The result may be success or failure depending on implementation,
+        // but the important thing is that it doesn't panic or cause memory issues
+    }
+    
+    #[test]
+    fn test_compiler_with_empty_model() {
+        let mut compiler = ImpulseCompiler::new();
+        let empty_model = vec![]; // Empty model bytes
+        
+        // Test that the compiler handles empty input without crashing
+        let _result = compiler.compile(&empty_model, "cpu");
+        // Note: The result may be success or failure depending on implementation,
+        // but the important thing is that it doesn't panic
+    }
 }

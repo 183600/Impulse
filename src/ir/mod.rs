@@ -295,4 +295,192 @@ mod tests {
             _ => panic!("Both should be tensor types"),
         }
     }
+
+    #[test]
+    fn test_deeply_nested_tensor_operations() {
+        // Test creating and manipulating deeply nested tensor types
+        let level1 = Type::Tensor {
+            element_type: Box::new(Type::F32),
+            shape: vec![2],
+        };
+        let level2 = Type::Tensor {
+            element_type: Box::new(level1),
+            shape: vec![3],
+        };
+        let level3 = Type::Tensor {
+            element_type: Box::new(level2),
+            shape: vec![4],
+        };
+
+        // Verify nested structure
+        match &level3 {
+            Type::Tensor { element_type: boxed_level2, shape: outer_shape } => {
+                assert_eq!(outer_shape, &vec![4]);
+                
+                // Access nested type
+                match boxed_level2.as_ref() {
+                    Type::Tensor { element_type: boxed_level1, shape: middle_shape } => {
+                        assert_eq!(middle_shape, &vec![3]);
+                        
+                        // Access innermost type
+                        match boxed_level1.as_ref() {
+                            Type::Tensor { element_type: inner_type, shape: inner_shape } => {
+                                assert_eq!(inner_shape, &vec![2]);
+                                
+                                match inner_type.as_ref() {
+                                    Type::F32 => {}, // Success
+                                    _ => panic!("Innermost type should be F32"),
+                                }
+                            },
+                            _ => panic!("Middle type should be Tensor<F32, [2]>"),
+                        }
+                    },
+                    _ => panic!("Outer type should be Tensor<Tensor<F32, [2]>, [3]>"),
+                }
+            },
+            _ => panic!("Level3 type should be Tensor<...>"),
+        }
+    }
+
+    #[test]
+    fn test_tensor_comparison_edge_cases() {
+        // Different element types
+        let f32_tensor = Type::Tensor {
+            element_type: Box::new(Type::F32),
+            shape: vec![2, 2],
+        };
+        let f64_tensor = Type::Tensor {
+            element_type: Box::new(Type::F64),
+            shape: vec![2, 2],
+        };
+        assert_ne!(f32_tensor, f64_tensor);
+
+        // Different shapes
+        let shape1_tensor = Type::Tensor {
+            element_type: Box::new(Type::F32),
+            shape: vec![2, 2],
+        };
+        let shape2_tensor = Type::Tensor {
+            element_type: Box::new(Type::F32),
+            shape: vec![4],
+        };
+        assert_ne!(shape1_tensor, shape2_tensor);
+
+        // Same everything should be equal
+        let tensor_a = Type::Tensor {
+            element_type: Box::new(Type::I32),
+            shape: vec![5, 5],
+        };
+        let tensor_b = Type::Tensor {
+            element_type: Box::new(Type::I32),
+            shape: vec![5, 5],
+        };
+        assert_eq!(tensor_a, tensor_b);
+    }
+
+    #[test]
+    fn test_complex_value_shapes() {
+        let complex_value = Value {
+            name: "complex_tensor".to_string(),
+            ty: Type::F32,
+            shape: vec![1, 3, 224, 224],  // Common in image processing
+        };
+        
+        assert_eq!(complex_value.name, "complex_tensor");
+        assert_eq!(complex_value.ty, Type::F32);
+        assert_eq!(complex_value.shape, vec![1, 3, 224, 224]);
+        
+        // Calculate total elements
+        let total_elements: usize = complex_value.shape.iter().product();
+        assert_eq!(total_elements, 1 * 3 * 224 * 224); // 150,528 elements
+    }
+
+    #[test]
+    fn test_empty_and_zero_dimension_tensors() {
+        // Test scalar value (0-dimensional tensor)
+        let scalar = Value {
+            name: "scalar_value".to_string(),
+            ty: Type::F32,
+            shape: vec![],  // Empty shape means scalar
+        };
+        
+        assert_eq!(scalar.name, "scalar_value");
+        assert_eq!(scalar.ty, Type::F32);
+        assert_eq!(scalar.shape.len(), 0);
+        assert!(scalar.shape.is_empty());
+        
+        // Scalar has 1 element
+        let scalar_elements: usize = scalar.shape.iter().product();
+        assert_eq!(scalar_elements, 1);
+
+        // Test tensor with zero in dimensions (represents empty tensor)
+        let zero_dim_tensor = Value {
+            name: "zero_dim_tensor".to_string(),
+            ty: Type::I32,
+            shape: vec![5, 0, 10],  // Contains 0, so total elements = 0
+        };
+        
+        assert_eq!(zero_dim_tensor.shape, vec![5, 0, 10]);
+        
+        // Zero-dimensional tensor has 0 elements
+        let zero_elements: usize = zero_dim_tensor.shape.iter().product();
+        assert_eq!(zero_elements, 0);
+
+        // Test another zero-dimensional case
+        let zero_tensor = Value {
+            name: "zero_tensor".to_string(),
+            ty: Type::Bool,
+            shape: vec![0],
+        };
+        
+        assert_eq!(zero_tensor.shape, vec![0]);
+        let zero_tensor_elements: usize = zero_tensor.shape.iter().product();
+        assert_eq!(zero_tensor_elements, 0);
+
+        // Test 1-dimensional zero-length tensor
+        let empty_1d = Value {
+            name: "empty_1d".to_string(),
+            ty: Type::F64,
+            shape: vec![0],
+        };
+        
+        assert_eq!(empty_1d.shape, vec![0]);
+        assert_eq!(empty_1d.shape[0], 0);
+    }
+
+    #[test]
+    fn test_operation_with_complex_structure() {
+        use std::collections::HashMap;
+        
+        let mut complex_op = Operation::new("conv2d_complex");
+        complex_op.inputs.push(Value {
+            name: "input_image".to_string(),
+            ty: Type::F32,
+            shape: vec![1, 3, 224, 224],
+        });
+        complex_op.inputs.push(Value {
+            name: "weights".to_string(),
+            ty: Type::F32,
+            shape: vec![64, 3, 7, 7],
+        });
+        complex_op.outputs.push(Value {
+            name: "feature_map".to_string(),
+            ty: Type::F32,
+            shape: vec![1, 64, 112, 112],
+        });
+        
+        let mut attrs = HashMap::new();
+        attrs.insert("padding".to_string(), Attribute::Int(3));
+        attrs.insert("stride".to_string(), Attribute::Int(2));
+        attrs.insert("activation".to_string(), Attribute::String("relu".to_string()));
+        complex_op.attributes = attrs;
+        
+        assert_eq!(complex_op.op_type, "conv2d_complex");
+        assert_eq!(complex_op.inputs.len(), 2);
+        assert_eq!(complex_op.outputs.len(), 1);
+        assert_eq!(complex_op.attributes.len(), 3);
+        assert!(complex_op.attributes.contains_key("padding"));
+        assert!(complex_op.attributes.contains_key("stride"));
+        assert!(complex_op.attributes.contains_key("activation"));
+    }
 }

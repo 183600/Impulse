@@ -252,3 +252,92 @@ impl Default for SearchSpace {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::{Operation, Value, Type};
+
+    #[test]
+    fn test_autotuner_creation() {
+        let tuner = AutoTuner::new();
+        assert_eq!(tuner.cache.len(), 0);
+    }
+
+    #[test]
+    fn test_default_gemm_params() {
+        let tuner = AutoTuner::new();
+        let params = tuner.get_default_params("gemm");
+        
+        match params {
+            TuneParams::Gemm { tile_m, tile_n, tile_k, vector_width } => {
+                assert_eq!(tile_m, 128);
+                assert_eq!(tile_n, 128);
+                assert_eq!(tile_k, 32);
+                assert_eq!(vector_width, 4);
+            },
+            _ => panic!("Expected GEMM params"),
+        }
+    }
+
+    #[test]
+    fn test_generate_gemm_candidates_size() {
+        let tuner = AutoTuner::new();
+        let candidates = tuner.generate_gemm_candidates().unwrap();
+        
+        // 3 tile_m options * 3 tile_n options * 3 tile_k options * 4 vector_width options = 108 combinations
+        assert_eq!(candidates.len(), 108);
+    }
+    
+    #[test]
+    fn test_hash_shapes_for_cache_key() {
+        let tuner = AutoTuner::new();
+        
+        // Create two sets of inputs/outputs with identical shapes
+        let inputs1 = vec![
+            Value { name: "input1".to_string(), ty: Type::F32, shape: vec![10, 20] },
+            Value { name: "input2".to_string(), ty: Type::F32, shape: vec![20, 30] },
+        ];
+        let outputs1 = vec![
+            Value { name: "output1".to_string(), ty: Type::F32, shape: vec![10, 30] },
+        ];
+        
+        let inputs2 = vec![
+            Value { name: "input_a".to_string(), ty: Type::F32, shape: vec![10, 20] }, // Same shape as inputs1
+            Value { name: "input_b".to_string(), ty: Type::F32, shape: vec![20, 30] }, // Same shape as inputs1
+        ];
+        let outputs2 = vec![
+            Value { name: "output_a".to_string(), ty: Type::F32, shape: vec![10, 30] }, // Same shape as outputs1
+        ];
+        
+        // The hashes should be the same because the shapes are identical
+        let hash1 = tuner.hash_shapes(&inputs1, &outputs1);
+        let hash2 = tuner.hash_shapes(&inputs2, &outputs2);
+        
+        assert_eq!(hash1, hash2);
+    }
+    
+    #[test]
+    fn test_autotuner_with_unknown_operation() {
+        let mut tuner = AutoTuner::new();
+        let operation = Operation::new("unknown_op_type");
+        let module = Module::new("test_module");
+        
+        // This should return default params instead of crashing
+        let result = tuner.tune_operation(&operation, &module);
+        assert!(result.is_ok());
+    }
+    
+    #[test]
+    fn test_search_space_defaults() {
+        let search_space = SearchSpace::default();
+        
+        // Validate that the default configuration has the expected values
+        assert_eq!(search_space.gemm_tile_sizes, vec![32, 64, 128, 256]);
+        assert_eq!(search_space.conv_tile_sizes, vec![7, 14, 28, 56]);
+        assert_eq!(search_space.attention_block_sizes, vec![16, 32, 64, 128, 256]);
+        assert_eq!(search_space.vector_widths, vec![1, 2, 4, 8, 16, 32]);
+        assert_eq!(search_space.num_warps_options, vec![1, 2, 4, 8, 16, 32]);
+        assert_eq!(search_space.stages_options, vec![2, 3, 4, 5]);
+    }
+}

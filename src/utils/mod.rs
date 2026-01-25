@@ -544,6 +544,349 @@ mod tests {
         assert!(gcd_duration.as_millis() < 100, "GCD function too slow: {:?}", gcd_duration);
         assert!(lcm_duration.as_millis() < 100, "LCM function too slow: {:?}", lcm_duration);
         assert!(round_up_duration.as_millis() < 100, "Round up function too slow: {:?}", round_up_duration);
+    #[test]
+    fn test_attribute_handling_various_types() {
+        use crate::ir::Attribute;
+        
+        // Test all attribute types
+        let int_attr = Attribute::Int(42);
+        let float_attr = Attribute::Float(3.14159);
+        let string_attr = Attribute::String("test_string".to_string());
+        let bool_attr = Attribute::Bool(true);
+        let array_attr = Attribute::Array(vec![
+            Attribute::Int(1),
+            Attribute::Int(2),
+            Attribute::Int(3),
+        ]);
+
+        // Verify they can be matched correctly
+        match int_attr {
+            Attribute::Int(v) => assert_eq!(v, 42),
+            _ => panic!("Expected Int attribute"),
+        }
+
+        match float_attr {
+            Attribute::Float(v) => assert!((v - 3.14159).abs() < f64::EPSILON),
+            _ => panic!("Expected Float attribute"),
+        }
+
+        match &string_attr {
+            Attribute::String(s) => assert_eq!(s, "test_string"),
+            _ => panic!("Expected String attribute"),
+        }
+
+        match bool_attr {
+            Attribute::Bool(v) => assert_eq!(v, true),
+            _ => panic!("Expected Bool attribute"),
+        }
+
+        match &array_attr {
+            Attribute::Array(arr) => {
+                assert_eq!(arr.len(), 3);
+                match &arr[0] {
+                    Attribute::Int(1) => {},
+                    _ => panic!("Expected first element to be Int(1)"),
+                }
+            },
+            _ => panic!("Expected Array attribute"),
+        }
+    }
+
+    #[test]
+    fn test_attribute_array_nested() {
+        use crate::ir::Attribute;
+        
+        // Create a nested array attribute
+        let nested_array = Attribute::Array(vec![
+            Attribute::Array(vec![
+                Attribute::Int(1),
+                Attribute::Int(2),
+            ]),
+            Attribute::Array(vec![
+                Attribute::String("nested".to_string()),
+                Attribute::Bool(false),
+            ]),
+        ]);
+
+        match &nested_array {
+            Attribute::Array(outer_arr) => {
+                assert_eq!(outer_arr.len(), 2);
+                
+                // Check first nested array
+                match &outer_arr[0] {
+                    Attribute::Array(inner1) => {
+                        assert_eq!(inner1.len(), 2);
+                        match &inner1[0] {
+                            Attribute::Int(1) => {},
+                            _ => panic!("Expected first nested element to be Int(1)"),
+                        }
+                    },
+                    _ => panic!("Expected first element to be Array"),
+                }
+                
+                // Check second nested array
+                match &outer_arr[1] {
+                    Attribute::Array(inner2) => {
+                        assert_eq!(inner2.len(), 2);
+                        match &inner2[0] {
+                            Attribute::String(s) if s == "nested" => {},
+                            _ => panic!("Expected nested string"),
+                        }
+                    },
+                    _ => panic!("Expected second element to be Array"),
+                }
+            },
+            _ => panic!("Expected nested array attribute"),
+        }
+    }
+
+    #[test]
+    fn test_tensor_size_calculation_edge_cases() {
+        use crate::ir::Type;
+        
+        // Test zero-size tensor - contains zero in dimensions
+        assert_eq!(ir_utils::calculate_tensor_size(&Type::F32, &[5, 0, 10]).unwrap(), 0);
+        assert_eq!(ir_utils::calculate_tensor_size(&Type::F64, &[0, 5]).unwrap(), 0);
+        assert_eq!(ir_utils::calculate_tensor_size(&Type::I32, &[7, 8, 0, 1]).unwrap(), 0);
+
+        // Test extremely large dimensions (but within usize bounds) - should not overflow
+        let large_dimension = 1000;
+        let large_size_result = ir_utils::calculate_tensor_size(&Type::F32, &[large_dimension, large_dimension]);
+        if let Ok(computed_size) = large_size_result {
+            assert_eq!(computed_size, large_dimension * large_dimension * 4); // 4 bytes for F32
+        } else {
+            // If the size calculation overflows, it should return an error
+            assert!(large_size_result.is_err());
+        }
+
+        // Test multi-dimensional size calculation
+        let size_3d = ir_utils::calculate_tensor_size(&Type::F32, &[2, 3, 4]).unwrap();
+        assert_eq!(size_3d, 2 * 3 * 4 * 4); // 2*3*4 elements * 4 bytes per F32
+
+        // Test with different data types
+        assert_eq!(ir_utils::calculate_tensor_size(&Type::I64, &[10, 10]).unwrap(), 10 * 10 * 8); // 8 bytes per I64
+        assert_eq!(ir_utils::calculate_tensor_size(&Type::Bool, &[100]).unwrap(), 100 * 1); // 1 byte per Bool
+        assert_eq!(ir_utils::calculate_tensor_size(&Type::I32, &[5, 5]).unwrap(), 5 * 5 * 4); // 4 bytes per I32
+    }
+
+    #[test]
+    fn test_nested_tensor_size_calculation_edge_cases() {
+        use crate::ir::Type;
+        
+        // Deeply nested tensor type
+        let nested_type = Type::Tensor {
+            element_type: Box::new(Type::F32),
+            shape: vec![2, 2],
+        };
+
+        // For a tensor<[2,2] f32> with outer shape [3], total size should be 3 * 2 * 2 * 4 = 48
+        let size = ir_utils::calculate_tensor_size(&nested_type, &[3]).unwrap();
+        assert_eq!(size, 3 * 2 * 2 * 4);
+
+        // For a tensor<[2,2] f32> with outer shape [], total size should be 1 * 2 * 2 * 4 = 16
+        let size_scalar = ir_utils::calculate_tensor_size(&nested_type, &[]).unwrap();
+        assert_eq!(size_scalar, 1 * 2 * 2 * 4);
+
+        // Even deeper nesting
+        let deeper_nested = Type::Tensor {
+            element_type: Box::new(
+                Type::Tensor {
+                    element_type: Box::new(Type::F64),
+                    shape: vec![3],
+                }
+            ),
+            shape: vec![2],
+        };
+
+        // For tensor<[2] tensor<[3] f64>> with outer shape [4], 
+        // total size should be 4 * 2 * 3 * 8 = 192
+        let deeper_size = ir_utils::calculate_tensor_size(&deeper_nested, &[4]).unwrap();
+        assert_eq!(deeper_size, 4 * 2 * 3 * 8);
+    }
+
+    #[test]
+    fn test_validation_utilities_error_conditions() {
+        use crate::ir::{Module, Value, Type, Operation};
+        
+        // Test module validation with duplicate input names
+        let mut module = Module::new("test_duplicate_inputs");
+        module.inputs.push(Value {
+            name: "input1".to_string(),
+            ty: Type::F32,
+            shape: vec![10],
+        });
+        module.inputs.push(Value {
+            name: "input1".to_string(),  // Duplicate name
+            ty: Type::F32,
+            shape: vec![20],
+        });
+        
+        let validation_result = validation_utils::validate_module(&module);
+        assert!(validation_result.is_err());
+        assert!(validation_result.unwrap_err().to_string().contains("Duplicate input name"));
+
+        // Test operation validation with duplicate names
+        let mut op = Operation::new("test_op");
+        op.inputs.push(Value {
+            name: "dup_name".to_string(),
+            ty: Type::F32,
+            shape: vec![5],
+        });
+        op.outputs.push(Value {
+            name: "dup_name".to_string(),  // Same name as input
+            ty: Type::F32,
+            shape: vec![5],
+        });
+        
+        let op_validation_result = validation_utils::validate_operation(&op);
+        assert!(op_validation_result.is_err());
+        assert!(op_validation_result.unwrap_err().to_string().contains("Duplicate name"));
+    }
+
+    #[test]
+    fn test_complex_module_validation() {
+        use crate::ir::{Module, Value, Type, Operation};
+        use std::collections::HashMap;
+
+        // Create a valid complex module
+        let mut module = Module::new("complex_valid_module");
+        
+        // Add inputs with unique names
+        module.inputs.push(Value {
+            name: "image_data".to_string(),
+            ty: Type::F32,
+            shape: vec![1, 3, 224, 224],
+        });
+        module.inputs.push(Value {
+            name: "conv_weights".to_string(),
+            ty: Type::F32,
+            shape: vec![64, 3, 7, 7],
+        });
+        
+        // Add outputs with unique names
+        module.outputs.push(Value {
+            name: "conv_output".to_string(),
+            ty: Type::F32,
+            shape: vec![1, 64, 112, 112],
+        });
+        
+        // Add an operation
+        let mut conv_op = Operation::new("conv2d");
+        conv_op.inputs.push(Value {
+            name: "input_tensor".to_string(),
+            ty: Type::F32,
+            shape: vec![1, 3, 224, 224],
+        });
+        conv_op.outputs.push(Value {
+            name: "output_tensor".to_string(),
+            ty: Type::F32,
+            shape: vec![1, 64, 112, 112],
+        });
+        
+        // Add attributes to the operation
+        let mut attrs = HashMap::new();
+        attrs.insert("padding".to_string(), crate::ir::Attribute::Int(3));
+        attrs.insert("stride".to_string(), crate::ir::Attribute::Int(2));
+        conv_op.attributes = attrs;
+        
+        module.add_operation(conv_op);
+        
+        // This should be valid
+        assert!(validation_utils::validate_module(&module).is_ok());
+
+        // Now add an operation with duplicate names to make it invalid
+        let mut bad_op = Operation::new("bad_op");
+        bad_op.inputs.push(Value {
+            name: "unique_input".to_string(),
+            ty: Type::F32,
+            shape: vec![10],
+        });
+        bad_op.outputs.push(Value {
+            name: "unique_input".to_string(),  // Same name as input - should fail
+            ty: Type::F32,
+            shape: vec![10],
+        });
+        
+        assert!(validation_utils::validate_operation(&bad_op).is_err());
+    }
+
+    #[test]
+    fn test_math_utilities_edge_cases() {
+        // Test GCD with special values
+        assert_eq!(math_utils::gcd(0, 0), 0);  // gcd(0, 0) is traditionally defined as 0
+        assert_eq!(math_utils::gcd(0, 5), 5);  // gcd(0, n) = n
+        assert_eq!(math_utils::gcd(5, 0), 5);  // gcd(n, 0) = n
+        assert_eq!(math_utils::gcd(1, 1000000), 1);  // gcd(1, n) = 1
+        assert_eq!(math_utils::gcd(17, 17), 17);  // gcd(n, n) = n
+        assert_eq!(math_utils::gcd(100, 75), 25);  // gcd(100, 75) should be 25
+        
+        // Test LCM with special values
+        assert_eq!(math_utils::lcm(0, 5), 0);  // lcm(0, n) = 0
+        assert_eq!(math_utils::lcm(5, 0), 0);  // lcm(n, 0) = 0
+        assert_eq!(math_utils::lcm(0, 0), 0);  // lcm(0, 0) = 0
+        assert_eq!(math_utils::lcm(1, 7), 7);  // lcm(1, n) = n
+        assert_eq!(math_utils::lcm(7, 1), 7);  // lcm(n, 1) = n
+        assert_eq!(math_utils::lcm(4, 6), 12); // lcm(4, 6) should be 12
+        assert_eq!(math_utils::lcm(12, 18), 36); // lcm(12, 18) should be 36
+        
+        // Test round_up_to_multiple with edge cases
+        assert_eq!(math_utils::round_up_to_multiple(0, 5), 0);  // 0 rounded up to any multiple is 0
+        assert_eq!(math_utils::round_up_to_multiple(5, 0), 5);  // When multiple is 0, return original
+        assert_eq!(math_utils::round_up_to_multiple(7, 1), 7);  // Rounding to multiple of 1 should return the same number
+        assert_eq!(math_utils::round_up_to_multiple(7, 7), 7);  // Rounding exact multiple should return same number
+        assert_eq!(math_utils::round_up_to_multiple(8, 7), 14);  // 8 rounded up to multiple of 7 should be 14
+        assert_eq!(math_utils::round_up_to_multiple(1, 100), 100);  // Small number rounded up to big multiple
+        assert_eq!(math_utils::round_up_to_multiple(100, 100), 100);  // Exact match
+        
+        // Test next_power_of_2 with edge cases
+        assert_eq!(math_utils::next_power_of_2(0), 1);    // Special case: 0 should return 1
+        assert_eq!(math_utils::next_power_of_2(1), 1);    // 1 is already a power of 2
+        assert_eq!(math_utils::next_power_of_2(2), 2);    // 2 is already a power of 2
+        assert_eq!(math_utils::next_power_of_2(3), 4);    // Next power of 2 after 3 is 4
+        assert_eq!(math_utils::next_power_of_2(4), 4);    // 4 is already a power of 2
+        assert_eq!(math_utils::next_power_of_2(5), 8);    // Next power of 2 after 5 is 8
+        assert_eq!(math_utils::next_power_of_2(7), 8);    // Next power of 2 after 7 is 8
+        assert_eq!(math_utils::next_power_of_2(8), 8);    // 8 is already a power of 2
+        assert_eq!(math_utils::next_power_of_2(9), 16);   // Next power of 2 after 9 is 16
+        assert_eq!(math_utils::next_power_of_2(15), 16);  // Next power of 2 after 15 is 16
+        assert_eq!(math_utils::next_power_of_2(16), 16);  // 16 is already a power of 2
+        assert_eq!(math_utils::next_power_of_2(17), 32);  // Next power of 2 after 17 is 32
+        assert_eq!(math_utils::next_power_of_2(1000), 1024); // Large number test
+    }
+
+    #[test]
+    fn test_math_utility_properties() {
+        // Test the mathematical property that gcd(a,b) * lcm(a,b) = a * b
+        // (when neither a nor b is 0)
+        let a = 12;
+        let b = 18;
+        let gcd_val = math_utils::gcd(a, b);
+        let lcm_val = math_utils::lcm(a, b);
+        assert_eq!(gcd_val * lcm_val, a * b);
+        
+        let a = 15;
+        let b = 25;
+        let gcd_val = math_utils::gcd(a, b);
+        let lcm_val = math_utils::lcm(a, b);
+        assert_eq!(gcd_val * lcm_val, a * b);
+        
+        // Test that a number is a power of 2 if and only if it equals its next power of 2
+        for i in 1..=32 {
+            let is_power_of_2 = (i & (i - 1)) == 0 && i != 0;  // Bitwise trick
+            let next_pow = math_utils::next_power_of_2(i);
+            if is_power_of_2 {
+                assert_eq!(i, next_pow);  // Powers of 2 should remain unchanged
+            } else {
+                assert!(next_pow > i);    // Others should be increased
+            }
+        }
+        
+        // Powers of 2 check specifically
+        let powers_of_2 = vec![1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
+        for pow in powers_of_2 {
+            assert_eq!(math_utils::next_power_of_2(pow), pow);  // Powers of 2 return themselves
+        }
+    }
         assert!(next_power_duration.as_millis() < 100, "Next power function too slow: {:?}", next_power_duration);
     }
 }

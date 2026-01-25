@@ -261,6 +261,16 @@ impl Transform for tensor_transforms::MemoryPromotionTransform {
     }
 }
 
+impl Transform for tensor_transforms::LayoutTransform {
+    fn name(&self) -> &str {
+        "LayoutTransform"
+    }
+    
+    fn apply(&self, module: &mut Module) -> Result<()> {
+        tensor_transforms::LayoutTransform::apply(self, module)
+    }
+}
+
 /// Default transformation pipeline for transformers
 pub fn create_transformer_optimization_pipeline() -> TransformPipeline {
     let mut pipeline = TransformPipeline::new();
@@ -319,5 +329,34 @@ mod tests {
             tensor_transforms::LayoutType::RowMajor
         );
         matches!(layout_transform.target_layout, tensor_transforms::LayoutType::RowMajor);
+    }
+    
+    #[test]
+    fn test_empty_transform_pipeline() {
+        let mut pipeline = TransformPipeline::new();
+        let mut module = Module::new("empty_pipeline_test");
+        
+        // Running an empty pipeline should be fine
+        let result = pipeline.run(&mut module);
+        assert!(result.is_ok());
+    }
+    
+    #[test]
+    fn test_transform_pipeline_with_various_layouts() {
+        let mut pipeline = TransformPipeline::new();
+        
+        // Add a row major layout transform
+        pipeline.add_transform(Box::new(
+            tensor_transforms::LayoutTransform::new(tensor_transforms::LayoutType::RowMajor)
+        ));
+        
+        // Add a strided layout transform
+        pipeline.add_transform(Box::new(
+            tensor_transforms::LayoutTransform::new(
+                tensor_transforms::LayoutType::Strided { stride: vec![1, 4, 16] }
+            )
+        ));
+        
+        assert_eq!(pipeline.transforms.len(), 2);
     }
 }
