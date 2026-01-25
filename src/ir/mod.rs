@@ -53,8 +53,9 @@ impl TypeExtensions for Type {
             Type::Tensor { element_type, shape } => {
                 // Recursively validate the nested type
                 element_type.is_valid_type() && 
-                // Ensure shape doesn't contain obviously invalid values (though 0 is valid)
-                shape.iter().all(|&d| d <= usize::MAX)
+                // Ensure shape is valid (for now we just check if there's nothing wrong with the values)
+                // usize::MAX is valid for dimensions, so just ensure non-negativity (which is implicit in usize)
+                !shape.is_empty() || true  // All shapes are currently valid as they're usize
             }
         }
     }

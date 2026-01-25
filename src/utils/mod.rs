@@ -27,7 +27,7 @@ pub mod ir_utils {
             },
             Type::Bool => {
                 let num_elements: usize = shape.iter().copied().product();
-                Ok(num_elements * 1)
+                Ok(num_elements * 1)  // Boolean typically takes 1 byte
             },
             Type::Tensor { element_type, shape: inner_shape } => {
                 // For tensor types, multiply the outer shape by the inner shape
@@ -213,15 +213,13 @@ pub mod math_utils {
         if multiple == 0 {
             return value;
         }
-        ((value + multiple - 1) / multiple) * multiple
+        value.div_ceil(multiple) * multiple
     }
     
     /// Find the next power of 2 >= value
     pub fn next_power_of_2(value: usize) -> usize {
-        if value == 0 {
+        if value <= 1 {
             1
-        } else if value == 1 {
-            1  // Special case: 1 is already a power of 2 (2^0)
         } else {
             let mut n = value - 1;
             n |= n >> 1;
@@ -229,10 +227,7 @@ pub mod math_utils {
             n |= n >> 4;
             n |= n >> 8;
             n |= n >> 16;
-            #[cfg(target_pointer_width = "64")]
-            {
-                n |= n >> 32;
-            }
+            n |= n >> 32;  // For 64-bit systems
             n + 1
         }
     }
