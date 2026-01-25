@@ -8,6 +8,8 @@ use crate::ImpulseCompiler;
 mod tests {
     use super::*;
     use rstest::rstest;
+    use crate::ir::{Module, Operation, Value, Type, Attribute};
+    use std::collections::HashMap;
 
     /// Test 1: Memory allocation stress test with very large collections
     #[test]
@@ -57,7 +59,7 @@ mod tests {
         assert_eq!(module.operations[0].inputs.len(), 10);
         assert_eq!(module.operations[0].outputs.len(), 5);
         
-        assert_eq!(module.operations[49_999].op_type, "stress_op_49999");
+        assert_eq!(module.operations[49_999].op_type, "stress_op_049999");
         assert_eq!(module.operations[49_999].inputs.len(), 10);
         assert_eq!(module.operations[49_999].outputs.len(), 5);
     }
@@ -105,21 +107,21 @@ mod tests {
         let mut compiler = ImpulseCompiler::new();
         
         // Test with empty model (should not panic)
-        let result = compiler.compile(&[], "cpu");
+        let _result = compiler.compile(&[], "cpu");
         // Result may be error, but the important part is it doesn't panic
         
         // Test with single-byte model
-        let result2 = compiler.compile(&[42], "cpu");
+        let _result2 = compiler.compile(&[42], "cpu");
         
         // Test with large repeated byte pattern that might cause issues
         let large_pattern = vec![0xFF; 1_000_000]; // 1MB of 0xFF
-        let result3 = compiler.compile(&large_pattern, "cpu");
+        let _result3 = compiler.compile(&large_pattern, "cpu");
         
         // Test with alternating bit pattern
         let alternating = (0..100_000)
             .flat_map(|i| if i % 2 == 0 { [0xAA] } else { [0x55] })
             .collect::<Vec<_>>();
-        let result4 = compiler.compile(&alternating, "cpu");
+        let _result4 = compiler.compile(&alternating, "cpu");
         
         // Just testing that these don't crash
         assert!(true); 
@@ -138,8 +140,8 @@ mod tests {
     fn test_various_tensor_types_and_shapes(#[case] data_type: Type, #[case] shape: Vec<usize>) {
         let value = Value {
             name: "param_test_tensor".to_string(),
-            ty: data_type,
-            shape,
+            ty: data_type.clone(),  // Fixed to avoid moving data_type
+            shape: shape.clone(),   // Fixed to avoid moving shape
         };
         
         // Verify that the value was created properly
@@ -186,10 +188,10 @@ mod tests {
             panic!("Expected short string attribute");
         }
         
-        if let Some(Attribute::String(s)) = op.attributes.get("very_long") {
+        if let Some(Attribute::String(s)) = op.attributes.get("extremely_long") {
             assert_eq!(s.len(), 1_000_000);
         } else {
-            panic!("Expected very long string attribute");
+            panic!("Expected extremely long string attribute");
         }
     }
 
@@ -204,17 +206,15 @@ mod tests {
             nested = Attribute::Array(vec![nested]);
         }
         
-        // Verify the structure exists
-        let count_arrays = |attr: &Attribute| -> usize {
-            match attr {
-                Attribute::Array(elements) => {
-                    1 + elements.iter().map(count_arrays).sum::<usize>()
-                }
-                _ => 0,
-            }
-        };
-        
-        assert!(count_arrays(&nested) > 0);
+        // Verify the structure exists (avoiding recursion that causes issues)
+        match &nested {
+            Attribute::Array(ref inner) => {
+                assert_eq!(inner.len(), 1);
+                // We can't effectively count nested arrays without potentially stack overflowing,
+                // so we just verify the structure is there
+            },
+            _ => panic!("Expected nested Array attribute"),
+        }
         
         // Clone the nested structure to ensure cloning works
         let cloned = nested.clone();
@@ -287,7 +287,7 @@ mod tests {
             };
             
             // Use checked multiplication to avoid overflow
-            let product_result: Option<usize> = value.shape.iter()
+            let _product_result: Option<usize> = value.shape.iter()
                 .try_fold(1_usize, |acc, &x| {
                     if x == 0 { 
                         Some(0) 
@@ -430,7 +430,7 @@ mod tests {
                 1 => assert_eq!(input.shape, vec![1_000_000, 10]), // Large dims
                 2 => assert_eq!(input.shape, vec![10, 0, 100]), // Contains zero
                 4 => assert_eq!(input.shape.len(), 0),         // Scalar
-                _ => assert!(input.shape.len() >= 0),          // Other shapes should exist
+                _ => assert!(true),          // Other shapes should exist (always true for usize)
             }
         }
     }

@@ -1,7 +1,8 @@
 //! Additional edge case tests for attribute handling in the Impulse compiler
 //! Focused specifically on edge cases with different attribute types
 
-use crate::ir::{Module, Operation, Value, Type, Attribute};
+use crate::ir::{Module, Operation, Attribute};
+use std::collections::HashMap;
 
 #[cfg(test)]
 mod tests {

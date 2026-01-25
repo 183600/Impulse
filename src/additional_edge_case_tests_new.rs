@@ -270,7 +270,7 @@ mod tests {
                     
                     op.inputs.push(Value {
                         name: format!("inp_{}_{}_{}", m_idx, op_idx, inp_idx),
-                        ty: data_type,
+                        ty: data_type.clone(),
                         shape: vec![inp_idx + 1, (op_idx % 10) + 1],
                     });
                     
