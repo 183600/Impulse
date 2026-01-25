@@ -239,7 +239,7 @@ pub mod math_utils {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ir::{Module, Value, Type, Operation};
+    use crate::ir::{Module, Value, Type, Operation, Attribute};
 
     #[test]
     fn test_calculate_tensor_size() {
@@ -1065,8 +1065,5 @@ mod tests {
         // Test LCM of these large primes
         let lcm_result = math_utils::lcm(large_prime1, large_prime2);
         assert_eq!(lcm_result, large_prime1 * large_prime2); // LCM of coprime numbers is their product
-    }
-
-        assert!(next_power_duration.as_millis() < 100, "Next power function too slow: {:?}", next_power_duration);
     }
 }

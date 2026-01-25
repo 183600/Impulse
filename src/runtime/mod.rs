@@ -84,6 +84,28 @@ struct Allocation {
     free: bool,
 }
 
+impl Allocation {
+    fn new(ptr: usize, size: usize) -> Self {
+        Self {
+            ptr,
+            size,
+            free: false,
+        }
+    }
+    
+    fn size(&self) -> usize {
+        self.size
+    }
+    
+    fn is_free(&self) -> bool {
+        self.free
+    }
+    
+    fn mark_free(&mut self) {
+        self.free = true;
+    }
+}
+
 impl MemoryPool {
     pub fn new(device: &Device) -> Result<Self> {
         Ok(Self {
@@ -101,11 +123,7 @@ impl MemoryPool {
             device: self.device.clone(),
         };
         
-        self.allocations.insert(handle.id, Allocation {
-            ptr: handle.id,  // Simulate a pointer
-            size,
-            free: false,
-        });
+        self.allocations.insert(handle.id, Allocation::new(handle.id, size));
 
         Ok(handle)
     }
