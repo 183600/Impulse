@@ -1,4 +1,4 @@
-use crate::ir::{Module, Type, Attribute};
+use crate::ir::{Module, Type};
 use anyhow::Result;
 use std::collections::HashMap;
 
@@ -1049,7 +1049,7 @@ mod tests {
         // Test math utilities with the largest possible values
         
         // Test next power of 2 with a value close to the maximum
-        let near_max = usize::MAX / 2;  // This would cause overflow if doubled
+        let _near_max = usize::MAX / 2;  // This would cause overflow if doubled
         // Instead, test with increasingly large values up to a safe limit
         let large_value = 1_000_000_000usize;
         let next_pow = math_utils::next_power_of_2(large_value);
