@@ -362,4 +362,60 @@ mod tests {
         assert_eq!(compiler1.passes.passes.len(), 0);
         assert_eq!(compiler2.passes.passes.len(), 0);
     }
+
+    #[test]
+    fn test_module_with_extreme_values_in_shape() {
+        // Create a module with operations containing extreme values in tensor shapes
+        let mut module = Module::new("extreme_module");
+        
+        // Add an operation with maximum possible dimensions
+        let extreme_value = Value {
+            name: "extreme_tensor".to_string(),
+            ty: Type::F32,
+            shape: vec![usize::MAX, 1],  // Test extreme values though multiplication may overflow
+        };
+        
+        let mut op = Operation::new("test_op");
+        op.inputs.push(extreme_value);
+        module.add_operation(op);
+        
+        assert_eq!(module.operations.len(), 1);
+        assert_eq!(module.operations[0].inputs[0].name, "extreme_tensor");
+    }
+
+    #[test]
+    fn test_operation_with_empty_name() {
+        // Test creating an operation with an empty name
+        let op = Operation::new("");
+        assert_eq!(op.op_type, "");
+        assert!(op.inputs.is_empty());
+        assert!(op.outputs.is_empty());
+        assert!(op.attributes.is_empty());
+    }
+
+    #[test]
+    fn test_value_with_unicode_names() {
+        // Test creating values with unicode names which are valid in Rust
+        let unicode_value = Value {
+            name: "tensor_名称_日本語_🔥".to_string(),
+            ty: Type::F32,
+            shape: vec![2, 3],
+        };
+        
+        assert_eq!(unicode_value.name, "tensor_名称_日本語_🔥");
+        assert_eq!(unicode_value.ty, Type::F32);
+        assert_eq!(unicode_value.shape, vec![2, 3]);
+    }
+
+    #[rstest::rstest]
+    #[case(vec![], 1)] // scalar has 1 element
+    #[case(vec![0], 0)] // contains 0, so product is 0
+    #[case(vec![1], 1)]
+    #[case(vec![1, 1, 1, 1, 1], 1)]
+    #[case(vec![2, 3, 4], 24)]
+    #[case(vec![10, 0, 5], 0)] // contains 0, so product is 0
+    fn test_shape_product_calculations(#[case] shape: Vec<usize>, #[case] expected_product: usize) {
+        let actual_product: usize = shape.iter().product();
+        assert_eq!(actual_product, expected_product);
+    }
 }

@@ -78,7 +78,6 @@ pub struct MemoryPool {
 }
 
 #[derive(Debug)]
-#[allow(dead_code)]
 struct Allocation {
     ptr: usize,  // In a real implementation this would be an actual pointer
     size: usize,
@@ -86,7 +85,6 @@ struct Allocation {
 }
 
 impl Allocation {
-    #[allow(dead_code)]
     fn new(ptr: usize, size: usize) -> Self {
         Self {
             ptr,
