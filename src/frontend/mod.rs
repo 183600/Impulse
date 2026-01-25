@@ -11,6 +11,11 @@ impl Frontend {
         Self {}
     }
 
+    /// Get the name of the frontend
+    pub fn name(&self) -> &str {
+        "Frontend"
+    }
+
     /// Import an ONNX model
     pub fn import_onnx(&self, _model_bytes: &[u8]) -> Result<Module> {
         println!("Importing ONNX model...");
