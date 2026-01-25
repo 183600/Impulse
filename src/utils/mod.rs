@@ -544,6 +544,9 @@ mod tests {
         assert!(gcd_duration.as_millis() < 100, "GCD function too slow: {:?}", gcd_duration);
         assert!(lcm_duration.as_millis() < 100, "LCM function too slow: {:?}", lcm_duration);
         assert!(round_up_duration.as_millis() < 100, "Round up function too slow: {:?}", round_up_duration);
+        assert!(next_power_duration.as_millis() < 100, "Next power function too slow: {:?}", next_power_duration);
+    }
+
     #[test]
     fn test_attribute_handling_various_types() {
         use crate::ir::Attribute;

@@ -727,7 +727,7 @@ mod tests {
     }
 
     #[test]
-    fn test_integer_overflow_in_shape_products() {
+    fn test_integer_overflow_with_large_dimensions() {
         // Test potential integer overflow in shape products
         // Use values that when multiplied together would exceed usize::MAX for most systems
         // This tests for potential arithmetic overflow issues
