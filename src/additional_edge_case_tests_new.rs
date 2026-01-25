@@ -2,6 +2,7 @@
 //! These tests cover more edge cases beyond the existing tests
 
 use crate::ir::{Module, Operation, Value, Type, Attribute};
+use std::collections::HashMap;
 
 #[cfg(test)]
 mod tests {
@@ -122,8 +123,8 @@ mod tests {
             let op = Operation::new(name);
             assert_eq!(op.op_type, *name);
             
-            // Test module creation with special names
-            let module = Module::new(name);
+            // Test module creation with special names - fixed to dereference
+            let module = Module::new(*name);
             assert_eq!(module.name, *name);
         }
     }
@@ -210,8 +211,8 @@ mod tests {
             f64::NAN,
             -0.0,  // Negative zero (distinct from positive zero)
             f64::EPSILON,
-            f64::consts::PI,
-            f64::consts::E,
+            std::f64::consts::PI,  // Fixed to be explicit about std namespace
+            std::f64::consts::E,   // Fixed to be explicit about std namespace
             f64::MAX,
             f64::MIN,
             0.1 + 0.2 - 0.3,  // May result in tiny imprecision
