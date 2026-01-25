@@ -4,8 +4,8 @@
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
+    use crate::{ImpulseCompiler};
     use crate::ir::{Module, Operation, Value, Type, Attribute};
-    use std::collections::HashMap;
 
     /// Test 1: Memory allocation stress test with very large collections
     #[test]
