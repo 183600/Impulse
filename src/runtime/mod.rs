@@ -79,15 +79,13 @@ pub struct MemoryPool {
 
 #[derive(Debug)]
 struct Allocation {
-    ptr: usize,  // In a real implementation this would be an actual pointer
     size: usize,
     free: bool,
 }
 
 impl Allocation {
-    fn new(ptr: usize, size: usize) -> Self {
+    fn new(size: usize) -> Self {
         Self {
-            ptr,
             size,
             free: false,
         }
@@ -126,7 +124,7 @@ impl MemoryPool {
             device: self.device.clone(),
         };
         
-        self.allocations.insert(handle.id, Allocation::new(handle.id, size));
+        self.allocations.insert(handle.id, Allocation::new(size));
 
         Ok(handle)
     }
