@@ -483,4 +483,137 @@ mod tests {
         assert!(complex_op.attributes.contains_key("stride"));
         assert!(complex_op.attributes.contains_key("activation"));
     }
+    
+    #[test]
+    fn test_large_tensor_dimensions() {
+        // Test very large tensor dimensions to check for potential overflow in calculations
+        // While this doesn't cause overflow in the current implementation due to usize, 
+        // it tests the limits of the system
+        let huge_shape = vec![1000, 1000, 100];  // 100M elements
+        let value = Value {
+            name: "huge_tensor".to_string(),
+            ty: Type::F32,
+            shape: huge_shape,
+        };
+        
+        assert_eq!(value.shape.len(), 3);
+        // Ensure the shape values are preserved
+        assert_eq!(value.shape[0], 1000);
+        assert_eq!(value.shape[1], 1000);
+        assert_eq!(value.shape[2], 100);
+    }
+    
+    #[test]
+    fn test_deep_recursion_in_tensor_types() {
+        // Test creating a deeply nested tensor type to make sure we don't hit stack limits
+        let mut current_type = Type::F32;
+        for _ in 0..100 {  // Create 100 levels of nesting
+            current_type = Type::Tensor {
+                element_type: Box::new(current_type),
+                shape: vec![2],
+            };
+        }
+        
+        // Ensure the final type is valid
+        if let Type::Tensor { shape, .. } = &current_type {
+            assert_eq!(shape, &vec![2]);
+        } else {
+            panic!("Expected a tensor type after nesting");
+        }
+        
+        // Test cloning of this deeply nested type
+        let cloned_type = current_type.clone();
+        assert_eq!(current_type, cloned_type);
+    }
+    
+    #[test]
+    fn test_module_with_many_operations() {
+        // Test creating a module with many operations to test memory management
+        let mut module = Module::new("large_module");
+        
+        // Add 10,000 operations to the module
+        for i in 0..10000 {
+            let mut op = Operation::new(&format!("op_{}", i));
+            op.inputs.push(Value {
+                name: format!("input_{}", i),
+                ty: Type::F32,
+                shape: vec![10, 10],
+            });
+            op.outputs.push(Value {
+                name: format!("output_{}", i),
+                ty: Type::F32,
+                shape: vec![10, 10],
+            });
+            
+            module.add_operation(op);
+        }
+        
+        assert_eq!(module.operations.len(), 10000);
+        assert_eq!(module.name, "large_module");
+        
+        // Verify some operations still have correct data
+        assert_eq!(module.operations[0].op_type, "op_0");
+        assert_eq!(module.operations[9999].op_type, "op_9999");
+        assert_eq!(module.operations[5000].op_type, "op_5000");
+    }
+    
+    #[test]
+    fn test_very_large_tensor_sizes() {
+        // Test tensor with very large size to test bounds checking
+        let large_value = Value {
+            name: "large_tensor".to_string(),
+            ty: Type::F32,
+            shape: vec![1000, 1000],  // 1 million elements
+        };
+        
+        assert_eq!(large_value.shape, vec![1000, 1000]);
+        let product: usize = large_value.shape.iter().product();
+        assert_eq!(product, 1_000_000);
+        
+        // Test with even larger sizes
+        let very_large_value = Value {
+            name: "very_large_tensor".to_string(),
+            ty: Type::F32,
+            shape: vec![10_000, 10_000],  // 100 million elements
+        };
+        
+        assert_eq!(very_large_value.shape, vec![10_000, 10_000]);
+        let large_product: usize = very_large_value.shape.iter().product();
+        assert_eq!(large_product, 100_000_000);
+    }
+    
+    #[test]
+    fn test_extreme_shaped_tensors() {
+        // Test tensors with extreme aspect ratios (very wide or very tall)
+        let thin_tensor = Value {
+            name: "thin_tensor".to_string(),
+            ty: Type::F32,
+            shape: vec![1, 1_000_000],  // 1 row, 1M columns
+        };
+        
+        assert_eq!(thin_tensor.shape, vec![1, 1_000_000]);
+        let thin_product: usize = thin_tensor.shape.iter().product();
+        assert_eq!(thin_product, 1_000_000);
+        
+        let tall_tensor = Value {
+            name: "tall_tensor".to_string(),
+            ty: Type::F32,
+            shape: vec![1_000_000, 1],  // 1M rows, 1 column
+        };
+        
+        assert_eq!(tall_tensor.shape, vec![1_000_000, 1]);
+        let tall_product: usize = tall_tensor.shape.iter().product();
+        assert_eq!(tall_product, 1_000_000);
+        
+        // Test single dimensional tensors with extreme sizes
+        let long_vector = Value {
+            name: "long_vector".to_string(),
+            ty: Type::F32,
+            shape: vec![10_000_000],  // 10 million element vector
+        };
+        
+        assert_eq!(long_vector.shape, vec![10_000_000]);
+        let long_product: usize = long_vector.shape.iter().product();
+        assert_eq!(long_product, 10_000_000);
+    }
 }

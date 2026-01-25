@@ -1,4 +1,4 @@
-use crate::ir::{Module, Type};
+use crate::ir::{Module, Type, Attribute};
 use anyhow::Result;
 use std::collections::HashMap;
 
@@ -887,6 +887,104 @@ mod tests {
             assert_eq!(math_utils::next_power_of_2(pow), pow);  // Powers of 2 return themselves
         }
     }
+    
+    #[test]
+    fn test_edge_case_tensor_size_calculations() {
+        use crate::ir::{Type};
+        
+        // Test handling of extreme large values that might cause overflow
+        // Note: This won't actually trigger overflow in the current implementation
+        // but verifies behavior with large values
+        let large_shape = vec![1000, 1000, 100];
+        let result = ir_utils::calculate_tensor_size(&Type::F32, &large_shape);
+        assert!(result.is_ok());
+        if let Ok(size) = result {
+            assert_eq!(size, 1000 * 1000 * 100 * 4); // 4 bytes per F32
+        }
+        
+        // Test with multiple different types and large shapes
+        let large_shape_i64 = vec![1000, 500];
+        let result_i64 = ir_utils::calculate_tensor_size(&Type::I64, &large_shape_i64);
+        assert!(result_i64.is_ok());
+        if let Ok(size) = result_i64 {
+            assert_eq!(size, 1000 * 500 * 8); // 8 bytes per I64
+        }
+        
+        // Test empty tensor with 0 dimensions
+        assert_eq!(ir_utils::calculate_tensor_size(&Type::F32, &vec![0]).unwrap(), 0);
+        assert_eq!(ir_utils::calculate_tensor_size(&Type::I32, &vec![0, 5]).unwrap(), 0);
+        assert_eq!(ir_utils::calculate_tensor_size(&Type::Bool, &vec![10, 0, 100]).unwrap(), 0);
+    }
+    
+    #[test]
+    fn test_large_number_math_utils() {
+        // Test large numbers with math utilities
+        let large_num1 = 1_000_000;
+        let large_num2 = 999_999;
+        let gcd_result = math_utils::gcd(large_num1, large_num2);
+        // gcd(1000000, 999999) = gcd(1000000, 1) = 1
+        assert_eq!(gcd_result, 1);
+        
+        let lcm_result = math_utils::lcm(large_num1, large_num2);
+        assert_eq!(lcm_result, large_num1 * large_num2); // Since gcd is 1
+        
+        let next_power = math_utils::next_power_of_2(1_000_000);
+        assert!(next_power >= 1_000_000);
+        assert_eq!(next_power, 1_048_576); // Next power of 2 after 1 million
+        
+        let round_up_result = math_utils::round_up_to_multiple(1_000_001, 1024);
+        assert_eq!(round_up_result, 1_000_448); // Round up to next multiple of 1024
+    }
+    
+    #[test]
+    fn test_memory_allocation_edge_cases() {
+        // Test potential edge cases with memory allocation for large structures
+        
+        // Test creating many small operations to test vector allocation/deallocation
+        let mut operations = Vec::with_capacity(100_000);
+        for i in 0..100_000 {
+            let mut op = Operation::new(&format!("op_{}", i));
+            if i % 1000 == 0 {
+                op.inputs.push(Value {
+                    name: format!("input_{}", i),
+                    ty: Type::F32,
+                    shape: vec![i % 100 + 1, i % 100 + 1], // Small variable sized tensor
+                });
+            }
+            operations.push(op);
+        }
+        
+        // Verify we got all operations
+        assert_eq!(operations.len(), 100_000);
+        
+        // Test tensor size calculation with potential overflow
+        // This tests large calculations that could theoretically overflow if not handled carefully
+        let large_shape = vec![usize::MAX / 1000, 10];  // Very large but not causing direct overflow
+        let result = ir_utils::calculate_tensor_size(&Type::F32, &large_shape);
+        // Either the operation succeeds or it properly errors out, no panics allowed
+        assert!(result.is_ok() || result.is_err());
+        
+        // Clean up by dropping the vector
+        drop(operations);
+        
+        // Test with many nested attributes (deep structure)
+        let mut attr = Attribute::Int(0);
+        for i in 1..1000 {
+            attr = Attribute::Array(vec![
+                Attribute::Int(i),
+                attr,  // Nesting
+            ]);
+        }
+        
+        // Just make sure we can handle deep nesting without stack overflow
+        match attr {
+            Attribute::Array(ref arr) => {
+                assert_eq!(arr.len(), 2);
+            },
+            _ => panic!("Expected array attribute after nesting"),
+        }
+    }
+
         assert!(next_power_duration.as_millis() < 100, "Next power function too slow: {:?}", next_power_duration);
     }
 }

@@ -38,6 +38,7 @@ ocl = { version = "0.19", optional = true }
 criterion = "0.5"
 assert_cmd = "2.0"
 predicates = "3.0"
+rstest = "0.18"
 
 [features]
 default = ["cpu"]
