@@ -2,7 +2,7 @@
 //! Focused specifically on edge cases with different attribute types
 
 use crate::ir::{Module, Operation, Attribute};
-use std::collections::HashMap;
+// std::collections::HashMap is used inside test functions
 
 #[cfg(test)]
 mod tests {

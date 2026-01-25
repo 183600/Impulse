@@ -1,7 +1,6 @@
 //! Additional edge case tests for the Impulse compiler - Part 2
 //! More comprehensive test cases beyond the first set
 
-use crate::ir::{Module, Operation, Value, Type, Attribute};
 use crate::ImpulseCompiler;
 
 #[cfg(test)]
