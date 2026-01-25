@@ -306,20 +306,9 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_compiler_with_very_long_strings() {
-        let mut compiler = ImpulseCompiler::new();
-        
-        // Test with a very long target string to check for buffer issues
-        let very_long_target = "v".repeat(10000);
-        let mock_model = vec![1u8, 2u8, 3u8];
-        
-        let result = compiler.compile(&mock_model, &very_long_target);
-        if result.is_err() {
-            let err_msg = result.unwrap_err().to_string();
-            assert!(err_msg.len() > 0);
-        }
     }
+
+    #[test]\n    fn test_compiler_with_very_long_strings() {\n        let mut compiler = ImpulseCompiler::new();\n        \n        // Test with a very long target string to check for buffer issues\n        let very_long_target = \"v\".repeat(10000);\n        let mock_model = vec![1u8, 2u8, 3u8];\n        \n        let result = compiler.compile(&mock_model, &very_long_target);\n        if result.is_err() {\n            let err_msg = result.unwrap_err().to_string();\n            assert!(err_msg.len() > 0);\n        }\n    }\n\n    #[rstest::rstest]\n    #[case(\"\")]\n    #[case(\"very_long_name_that_exceeds_normal_limits_by_a_lot_and_is_used_to_test_string_handling_capabilities\")]\n    #[case(\"!@#$%^&*()_+-=[]{}|;':\\\",./<>?~`\")]\n    fn test_compiler_with_special_case_strings(#[case] input_string: String) {\n        let mut compiler = ImpulseCompiler::new();\n        let mock_model = vec![1u8, 2u8, 3u8];\n        \n        // Test compilation with special case strings to ensure they don't cause crashes\n        let result = compiler.compile(&mock_model, &input_string);\n        if result.is_err() {\n            let err_msg = result.unwrap_err().to_string();\n            assert!(err_msg.len() > 0);\n        }\n    }\n\n    #[test]\n    fn test_compiler_with_numeric_boundaries() {\n        let mut compiler = ImpulseCompiler::new();\n        \n        // Test with maximum possible values for model sizes\n        let max_model = vec![0u8; 100_000_000]; // 100MB model\n        let result = compiler.compile(&max_model, \"cpu\");\n        \n        // Should not panic, regardless of result\n        if result.is_err() {\n            let err_msg = result.unwrap_err().to_string();\n            assert!(err_msg.len() > 0);\n        }\n    }\n}
 
     #[rstest::rstest]
     #[case("")]

@@ -644,6 +644,85 @@ mod tests {
     }
 
     #[test]
+    fn test_deeply_nested_attributes() {
+        use crate::ir::Attribute;
+        
+        // Create a deeply nested attribute structure to test recursion limits
+        let mut attr = Attribute::Int(1);
+        
+        // Build nested arrays up to a depth of 50
+        for i in 2..50 {
+            attr = Attribute::Array(vec![
+                Attribute::Int(i),
+                attr,
+            ]);
+        }
+        
+        // Verify the nested structure still works
+        match &attr {
+            Attribute::Array(arr) => {
+                assert_eq!(arr.len(), 2);
+                
+                match &arr[0] {
+                    Attribute::Int(val) => {
+                        assert_eq!(*val, 49); // Last value inserted
+                    },
+                    _ => panic!("Expected first element to be Int(49)"),
+                }
+                
+                // Check that the nested structure can be accessed
+                match &arr[1] {
+                    Attribute::Array(_) | Attribute::Int(_) => {}, // Either is valid at this depth
+                    _ => panic!("Expected nested structure"),
+                }
+            },
+            _ => panic!("Expected final structure to be an Array"),
+        }
+    }
+
+    #[test]
+    fn test_empty_attributes() {
+        use crate::ir::Attribute;
+        
+        // Test empty string attribute
+        let empty_string_attr = Attribute::String(String::new());
+        match &empty_string_attr {
+            Attribute::String(s) => assert!(s.is_empty()),
+            _ => panic!("Expected empty String attribute"),
+        }
+        
+        // Test empty array attribute
+        let empty_array_attr = Attribute::Array(vec![]);
+        match &empty_array_attr {
+            Attribute::Array(arr) => assert!(arr.is_empty()),
+            _ => panic!("Expected empty Array attribute"),
+        }
+        
+        // Test array with empty arrays inside
+        let array_with_empty = Attribute::Array(vec![
+            Attribute::Array(vec![]),
+            Attribute::Int(42),
+        ]);
+        
+        match &array_with_empty {
+            Attribute::Array(arr) => {
+                assert_eq!(arr.len(), 2);
+                
+                match &arr[0] {
+                    Attribute::Array(empty_arr) => assert!(empty_arr.is_empty()),
+                    _ => panic!("Expected first element to be an empty Array"),
+                }
+                
+                match &arr[1] {
+                    Attribute::Int(42) => {}, // Expected
+                    _ => panic!("Expected second element to be Int(42)"),
+                }
+            },
+            _ => panic!("Expected top-level Array attribute"),
+        }
+    }
+
+    #[test]
     fn test_tensor_size_calculation_edge_cases() {
         use crate::ir::Type;
         
@@ -814,6 +893,153 @@ mod tests {
     }
 
     #[test]
+    fn test_validation_with_extremely_long_names() {
+        use crate::ir::{Module, Value, Type, Operation};
+        
+        // Test validation with extremely long names to check string limit handling
+        
+        // Create a module with very long name
+        let very_long_name = "x".repeat(100_000);
+        let mut module = Module::new(&very_long_name);
+        
+        // Add inputs with long names
+        module.inputs.push(Value {
+            name: "input1_".to_string() + &"a".repeat(50_000),
+            ty: Type::F32,
+            shape: vec![10],
+        });
+        module.inputs.push(Value {
+            name: "input2_".to_string() + &"b".repeat(50_000), 
+            ty: Type::F32,
+            shape: vec![20],
+        });
+        
+        // Add operations with long names and inputs/outputs
+        let mut op = Operation::new(&("operation_".to_owned() + &"o".repeat(40_000)));
+        op.inputs.push(Value {
+            name: "long_input_name_".to_string() + &"i".repeat(30_000),
+            ty: Type::F32,
+            shape: vec![5, 5],
+        });
+        op.outputs.push(Value {
+            name: "long_output_name_".to_string() + &"o".repeat(30_000),
+            ty: Type::F32,
+            shape: vec![5, 5],
+        });
+        
+        module.add_operation(op);
+        
+        // This should validate successfully despite long names
+        let result = validation_utils::validate_module(&module);
+        assert!(result.is_ok());
+        
+        // Now test with duplicate names among long names (should fail)
+        let mut bad_module = Module::new("bad_long_names");
+        let long_name_base = "very_long_unique_name_".to_owned() + &"x".repeat(50_000);
+        bad_module.inputs.push(Value {
+            name: long_name_base.clone(),
+            ty: Type::F32,
+            shape: vec![5],
+        });
+        bad_module.inputs.push(Value {
+            name: long_name_base,  // Duplicate
+            ty: Type::F32,
+            shape: vec![10],
+        });
+        
+        let bad_result = validation_utils::validate_module(&bad_module);
+        assert!(bad_result.is_err());
+        assert!(bad_result.unwrap_err().to_string().contains("Duplicate input name"));
+    }
+
+    #[test]
+    fn test_validation_of_complex_nested_structures() {
+        use crate::ir::{Module, Value, Type, Operation, Attribute};
+        use std::collections::HashMap;
+        
+        // Create a module with complex nested structures to validate
+        let mut module = Module::new("nested_validation_test");
+        
+        // Create a complex nested tensor type
+        let nested_tensor_type = Type::Tensor {
+            element_type: Box::new(Type::Tensor {
+                element_type: Box::new(Type::F32),
+                shape: vec![3, 3],
+            }),
+            shape: vec![2, 2],
+        };
+        
+        // Add an operation with complex inputs and outputs
+        let mut complex_op = Operation::new("complex_op");
+        
+        // Add complex-shaped inputs
+        complex_op.inputs.push(Value {
+            name: "nested_tensor_input".to_string(),
+            ty: nested_tensor_type.clone(),
+            shape: vec![4],  // Outer shape for the nested tensor
+        });
+        
+        complex_op.inputs.push(Value {
+            name: "regular_tensor_input".to_string(),
+            ty: Type::F64,
+            shape: vec![10, 20, 5],
+        });
+        
+        // Add complex-shaped outputs
+        complex_op.outputs.push(Value {
+            name: "nested_tensor_output".to_string(),
+            ty: nested_tensor_type,
+            shape: vec![6],  // Different outer shape
+        });
+        
+        complex_op.outputs.push(Value {
+            name: "regular_tensor_output".to_string(),
+            ty: Type::I32,
+            shape: vec![5, 5, 5, 5],
+        });
+        
+        // Add complex attributes
+        let mut attrs = HashMap::new();
+        attrs.insert(
+            "complex_array_attr".to_string(),
+            Attribute::Array(vec![
+                Attribute::Int(1),
+                Attribute::Float(3.14),
+                Attribute::String("nested_string".to_string()),
+                Attribute::Array(vec![
+                    Attribute::Bool(true),
+                    Attribute::Int(42),
+                ]),
+            ])
+        );
+        attrs.insert("simple_int_attr".to_string(), Attribute::Int(123));
+        complex_op.attributes = attrs;
+        
+        module.add_operation(complex_op);
+        
+        // This complex structure should still validate successfully
+        let result = validation_utils::validate_module(&module);
+        assert!(result.is_ok());
+        
+        // Now add an operation with naming conflicts in the complex structure
+        let mut conflicting_op = Operation::new("conflict_op");
+        conflicting_op.inputs.push(Value {
+            name: "same_name".to_string(),
+            ty: Type::F32,
+            shape: vec![10],
+        });
+        conflicting_op.outputs.push(Value {
+            name: "same_name".to_string(),  // Same name as input - should cause conflict
+            ty: Type::F32,
+            shape: vec![10],
+        });
+        
+        let conflict_result = validation_utils::validate_operation(&conflicting_op);
+        assert!(conflict_result.is_err());
+        assert!(conflict_result.unwrap_err().to_string().contains("Duplicate name"));
+    }
+
+    #[test]
     fn test_math_utilities_edge_cases() {
         // Test GCD with special values
         assert_eq!(math_utils::gcd(0, 0), 0);  // gcd(0, 0) is traditionally defined as 0
@@ -888,6 +1114,72 @@ mod tests {
         let powers_of_2 = vec![1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024];
         for pow in powers_of_2 {
             assert_eq!(math_utils::next_power_of_2(pow), pow);  // Powers of 2 return themselves
+        }
+    }
+
+    #[test]
+    fn test_math_utils_with_large_numbers() {
+        // Test math utilities with very large numbers that are still within usize range
+        
+        // Test GCD with very large coprime numbers
+        let large_num1 = 999_999_937; // Large prime
+        let large_num2 = 999_999_967; // Another large prime
+        let gcd_result = math_utils::gcd(large_num1, large_num2);
+        assert_eq!(gcd_result, 1);  // GCD of two different primes is 1
+        
+        // Test LCM of these large primes
+        let lcm_result = math_utils::lcm(large_num1, large_num2);
+        assert_eq!(lcm_result, large_num1 * large_num2);  // LCM of coprimes is their product
+        
+        // Test round_up with large numbers
+        let large_value = 1_000_000_000;
+        let round_up_result = math_utils::round_up_to_multiple(large_value, 1024);
+        assert!(round_up_result >= large_value);
+        assert_eq!(round_up_result % 1024, 0);  // Should be divisible by 1024
+        
+        // Test next power of 2 with a large number
+        let next_pow = math_utils::next_power_of_2(large_value);
+        assert!(next_pow.is_power_of_two());
+        assert!(next_pow >= large_value);
+    }
+
+    #[test]
+    fn test_math_utils_comprehensive_edge_cases() {
+        // Comprehensive edge case testing for all math utilities
+        
+        // Test gcd with all combinations of 0 and 1
+        assert_eq!(math_utils::gcd(0, 0), 0);
+        assert_eq!(math_utils::gcd(0, 1), 1);
+        assert_eq!(math_utils::gcd(1, 0), 1);
+        assert_eq!(math_utils::gcd(1, 1), 1);
+        
+        // Test lcm with all combinations of 0 and 1
+        assert_eq!(math_utils::lcm(0, 0), 0);
+        assert_eq!(math_utils::lcm(0, 1), 0);
+        assert_eq!(math_utils::lcm(1, 0), 0);
+        assert_eq!(math_utils::lcm(1, 1), 1);
+        
+        // Test round_up with extreme multiples
+        assert_eq!(math_utils::round_up_to_multiple(1, 1), 1);  // Everything is multiple of 1
+        assert_eq!(math_utils::round_up_to_multiple(0, 1000), 0);  // 0 rounded to any multiple is 0
+        assert_eq!(math_utils::round_up_to_multiple(999, 1000), 1000);  // Just below a big multiple
+        assert_eq!(math_utils::round_up_to_multiple(1000, 1000), 1000);  // Exact match
+        
+        // Test next_power_of_2 with various ranges
+        assert_eq!(math_utils::next_power_of_2(1), 1);
+        assert_eq!(math_utils::next_power_of_2(2), 2);
+        for exp in 1..5 {  // Reduced range to debug
+            let power_of_2 = 1 << exp;
+            let prev = power_of_2 - 1;  // Number just before power of 2
+            let next = power_of_2 + 1;  // Number just after power of 2
+            
+            assert_eq!(math_utils::next_power_of_2(prev), power_of_2);
+            assert_eq!(math_utils::next_power_of_2(power_of_2), power_of_2);
+            if power_of_2 < usize::MAX / 2 {  // Prevent overflow
+                let expected = power_of_2 << 1;
+                let actual = math_utils::next_power_of_2(next);
+                assert_eq!(actual, expected, "Failed for exp={}, power_of_2={}, next={}, expected={}, actual={}", exp, power_of_2, next, expected, actual);
+            }
         }
     }
     
@@ -986,6 +1278,66 @@ mod tests {
             },
             _ => panic!("Expected array attribute after nesting"),
         }
+    }
+
+    #[test]
+    fn test_large_memory_allocations_stress() {
+        // Stress test with potentially huge allocations to verify robustness
+        
+        // Test creating a module with extremely large number of operations
+        let mut module = Module::new("stress_test_module");
+        
+        // Add operations in batches to test memory allocation
+        for batch in 0..10 {
+            for i in 0..10_000 {
+                let idx = batch * 10_000 + i;
+                let mut op = Operation::new(&format!("stress_op_{}", idx));
+                
+                // Add minimal amount of data to keep test reasonable
+                op.inputs.push(Value {
+                    name: format!("input_{}", idx),
+                    ty: Type::F32,
+                    shape: vec![1], // Minimal shape
+                });
+                
+                module.add_operation(op);
+            }
+            
+            // Verify progress every batch
+            assert_eq!(module.operations.len(), (batch + 1) * 10_000);
+        }
+        
+        assert_eq!(module.operations.len(), 100_000);
+        
+        // Check that we can access elements from different parts of the module
+        assert_eq!(module.operations[0].op_type, "stress_op_0");
+        assert_eq!(module.operations[50_000].op_type, "stress_op_50000");
+        assert_eq!(module.operations[99_999].op_type, "stress_op_99999");
+    }
+
+    #[test]
+    fn test_string_allocation_for_long_names() {
+        // Test with extremely long names to check string allocation limits
+        let long_name = "a".repeat(100_000); // 100k character name
+        
+        // Test with a value
+        let value = Value {
+            name: long_name.clone(),
+            ty: Type::F32,
+            shape: vec![1, 2, 3],
+        };
+        
+        assert_eq!(value.name.len(), 100_000);
+        assert_eq!(value.name.chars().nth(0), Some('a'));
+        assert_eq!(value.name.chars().nth(99_999), Some('a'));
+        
+        // Test with an operation
+        let op = Operation::new(&long_name);
+        assert_eq!(op.op_type.len(), 100_000);
+        
+        // Test with a module
+        let module = Module::new(long_name.clone());
+        assert_eq!(module.name.len(), 100_000);
     }
 
     #[test]
