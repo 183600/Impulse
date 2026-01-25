@@ -55,7 +55,7 @@ fn test_extreme_tensor_type_nesting() {
     assert_eq!(current_type, cloned_type);
     
     // The type should be valid
-    use impulse::ir::TypeExtensions;
+    use crate::ir::TypeExtensions;
     assert!(current_type.is_valid_type());
 }
 
@@ -331,7 +331,7 @@ fn test_tensor_types_with_extreme_shape_variations() {
         assert_eq!(tensor_type, &cloned);
         
         // Test validation
-        use impulse::ir::TypeExtensions;
+        use crate::ir::TypeExtensions;
         assert!(tensor_type.is_valid_type());
         
         // Do specific checks based on index
