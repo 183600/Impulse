@@ -29,6 +29,9 @@ mod attribute_edge_case_tests;
 mod additional_boundary_tests;
 
 #[cfg(test)]
+mod additional_edge_case_tests_new;
+
+#[cfg(test)]
 mod additional_comprehensive_tests;
 
 #[cfg(test)]
