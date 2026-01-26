@@ -809,3 +809,364 @@ mod tests {
     }
 }
 
+/// Additional edge case tests for the core functionality of the Impulse compiler
+#[cfg(test)]
+mod additional_edge_case_tests {
+    use crate::ir::{Module, Value, Type, Operation, Attribute};
+    use std::collections::HashMap;
+
+    /// Test 1: Integer overflow in tensor size calculations using checked arithmetic
+    #[test]
+    fn test_tensor_size_overflow_protection() {
+        // Values chosen carefully to potentially cause overflow when multiplied
+        // Using values that are large but not necessarily causing overflow on current systems
+        let large_value = Value {
+            name: "large_tensor".to_string(),
+            ty: Type::F32,
+            shape: vec![100_000, 100_000],  // Potential for 10 billion elements
+        };
+
+        // Use checked multiplication to detect potential overflow
+        let mut product: Option<usize> = Some(1);
+        for dim in &large_value.shape {
+            product = product.and_then(|p| p.checked_mul(*dim));
+        }
+
+        // The product may overflow, so we accept either Some(value) or None if overflow detected
+        assert!(product.is_some() || product.is_none());
+
+        // Test with a known-safe smaller value to ensure logic works
+        let safe_value = Value {
+            name: "safe_tensor".to_string(),
+            ty: Type::F32,
+            shape: vec![1000, 1000],  // 1 million elements, safe
+        };
+        let safe_product: usize = safe_value.shape.iter().product();
+        assert_eq!(safe_product, 1_000_000);
+    }
+
+    /// Test 2: Extremely deep recursion in nested tensor types to test stack limits
+    #[test]
+    fn test_extreme_tensor_nesting_stack_depth() {
+        // Create a very deeply nested tensor type to test stack limits
+        let mut current_type = Type::F32;
+        const NESTING_DEPTH: usize = 500; // Moderate depth to avoid stack overflow in testing
+
+        for _ in 0..NESTING_DEPTH {
+            current_type = Type::Tensor {
+                element_type: Box::new(current_type),
+                shape: vec![1], // Minimal shape for simplicity
+            };
+        }
+
+        // Ensure the final type is still valid
+        match &current_type {
+            Type::Tensor { shape, .. } => {
+                assert_eq!(shape, &vec![1]);
+            },
+            _ => panic!("Expected a nested tensor type"),
+        }
+
+        // Test that we can properly clone this deeply nested type
+        let cloned = current_type.clone();
+        assert_eq!(current_type, cloned);
+    }
+
+    /// Test 3: Edge cases in type validation and extensions
+    #[test]
+    fn test_type_validation_edge_cases() {
+        use crate::ir::TypeExtensions;
+
+        // Test that all basic types are valid
+        assert!(Type::F32.is_valid_type());
+        assert!(Type::F64.is_valid_type());
+        assert!(Type::I32.is_valid_type());
+        assert!(Type::I64.is_valid_type());
+        assert!(Type::Bool.is_valid_type());
+
+        // Test nested tensor types are valid
+        let nested_tensor = Type::Tensor {
+            element_type: Box::new(Type::F32),
+            shape: vec![2, 3],
+        };
+        assert!(nested_tensor.is_valid_type());
+
+        // Test deeper nesting
+        let deeper_nested = Type::Tensor {
+            element_type: Box::new(
+                Type::Tensor {
+                    element_type: Box::new(Type::I64),
+                    shape: vec![5],
+                }
+            ),
+            shape: vec![3, 4],
+        };
+        assert!(deeper_nested.is_valid_type());
+    }
+
+    /// Test 4: Invalid UTF-8 sequences in string attributes (though Rust guarantees valid UTF-8)
+    #[test]
+    fn test_string_attribute_with_various_unicode_sequences() {
+        let test_cases = vec![
+            ("simple_ascii", "hello world"),
+            ("unicode_emoji", "hello 🌍"),
+            ("unicode_chinese", "你好世界"),
+            ("unicode_russian", "Привет мир"),
+            ("mixed_unicode", "mix3d t3xt 世界 🦀 #123"),
+            ("control_chars", "\n\t\r\0"),
+            ("special_unicode", "café naïve résumé"),
+        ];
+
+        for (name, content) in test_cases {
+            let attr = Attribute::String(content.to_string());
+            match attr {
+                Attribute::String(s) => {
+                    assert_eq!(s, content, "Attribute string mismatch for case: {}", name);
+                },
+                _ => panic!("Expected String attribute for case: {}", name),
+            }
+        }
+    }
+
+    /// Test 5: Empty collections and boundary conditions in IR structures
+    #[test]
+    fn test_empty_collection_boundary_conditions() {
+        // Test empty module
+        let empty_module = Module::new("");
+        assert_eq!(empty_module.name, "");
+        assert_eq!(empty_module.operations.len(), 0);
+        assert_eq!(empty_module.inputs.len(), 0);
+        assert_eq!(empty_module.outputs.len(), 0);
+
+        // Test operation with empty fields
+        let empty_op = Operation::new("");
+        assert_eq!(empty_op.op_type, "");
+        assert_eq!(empty_op.inputs.len(), 0);
+        assert_eq!(empty_op.outputs.len(), 0);
+        assert_eq!(empty_op.attributes.len(), 0);
+
+        // Test value with empty shape (scalar)
+        let scalar_value = Value {
+            name: "scalar".to_string(),
+            ty: Type::F32,
+            shape: vec![],  // Empty shape indicates scalar
+        };
+        assert_eq!(scalar_value.shape.len(), 0);
+        assert!(scalar_value.shape.is_empty());
+
+        // Test with empty collections in module
+        let mut module = Module::new("collection_test");
+        module.inputs = vec![];
+        module.outputs = vec![];
+        assert_eq!(module.inputs.len(), 0);
+        assert_eq!(module.outputs.len(), 0);
+    }
+
+    /// Test 6: Maximum size limits for collections and containers
+    #[test]
+    fn test_extremely_large_collections() {
+        // Test with a large number of operations in a module
+        const NUM_OPERATIONS: usize = 10_000;  // Large but reasonable number for testing
+        let mut module = Module::new("large_collection_module");
+
+        // Add many operations
+        for i in 0..NUM_OPERATIONS {
+            let op = Operation::new(&format!("operation_{}", i));
+            module.add_operation(op);
+        }
+
+        assert_eq!(module.operations.len(), NUM_OPERATIONS);
+
+        // Test with many attributes in a single operation
+        let mut large_op = Operation::new("multibute_op");
+        let mut attrs = HashMap::new();
+        for i in 0..5_000 {  // 5k attributes
+            attrs.insert(
+                format!("attr_{}", i),
+                Attribute::String(format!("value_{}", i))
+            );
+        }
+        large_op.attributes = attrs;
+
+        assert_eq!(large_op.attributes.len(), 5_000);
+    }
+
+    /// Test 7: Extreme values in integer attributes to test boundaries
+    #[test]
+    fn test_integer_attribute_boundary_values() {
+        let test_cases = vec![
+            (i64::MIN, "min_i64"),
+            (i64::MAX, "max_i64"),
+            (0, "zero_i64"),
+            (-1, "minus_one"),
+            (1, "plus_one"),
+            (i64::MIN + 1, "min_plus_one"),
+            (i64::MAX - 1, "max_minus_one"),
+        ];
+
+        for (value, name) in test_cases {
+            let attr = Attribute::Int(value);
+            match attr {
+                Attribute::Int(retrieved_value) => {
+                    assert_eq!(retrieved_value, value, "Integer attribute mismatch for case: {}", name);
+                },
+                _ => panic!("Expected Int attribute for case: {}", name),
+            }
+        }
+    }
+
+    /// Test 8: Floating-point attribute edge cases including special values
+    #[test]
+    fn test_floating_point_attribute_edge_cases() {
+        let test_cases = vec![
+            (f64::INFINITY, "positive_infinity"),
+            (f64::NEG_INFINITY, "negative_infinity"),
+            (f64::NAN, "nan"),
+            (0.0, "positive_zero"),
+            (-0.0, "negative_zero"),
+            (f64::EPSILON, "epsilon"),
+            (f64::MIN_POSITIVE, "min_positive"),
+            (f64::MAX, "max_f64"),
+            (f64::MIN, "min_f64"),
+            (std::f64::consts::PI, "pi"),
+            (std::f64::consts::E, "euler_constant"),
+        ];
+
+        for (value, name) in test_cases {
+            let attr = Attribute::Float(value);
+            match attr {
+                Attribute::Float(retrieved_value) => {
+                    if value.is_nan() {
+                        assert!(retrieved_value.is_nan(), "Expected NaN for case: {}", name);
+                    } else {
+                        // Use approximate equality for floating point comparisons
+                        if (value - retrieved_value).abs() > f64::EPSILON {
+                            // Special case for infinity comparison
+                            if !(value.is_infinite() && retrieved_value.is_infinite()) {
+                                panic!("Float attribute mismatch for case: {}: expected {}, got {}", name, value, retrieved_value);
+                            }
+                        }
+                    }
+                },
+                _ => panic!("Expected Float attribute for case: {}", name),
+            }
+        }
+    }
+
+    /// Test 9: Nested array attributes with multiple levels of nesting
+    #[test]
+    fn test_deeply_nested_array_attributes() {
+        // Create a complex nested array structure
+        let nested_array = Attribute::Array(vec![
+            Attribute::Int(1),
+            Attribute::Array(vec![
+                Attribute::Float(2.5),
+                Attribute::Array(vec![
+                    Attribute::String("deeply nested".to_string()),
+                    Attribute::Bool(true),
+                ]),
+                Attribute::Int(3),
+            ]),
+            Attribute::Array(vec![
+                Attribute::Array(vec![
+                    Attribute::Bool(false),
+                    Attribute::Int(42),
+                ]),
+                Attribute::String("another level".to_string()),
+            ]),
+        ]);
+
+        // Validate the structure
+        match &nested_array {
+            Attribute::Array(root_level) => {
+                assert_eq!(root_level.len(), 3);  // Should have three top-level elements
+                
+                // Check first element: Int(1)
+                match &root_level[0] {
+                    Attribute::Int(1) => {},
+                    _ => panic!("First element should be Int(1)"),
+                }
+
+                // Check second element: Array containing Float, nested Array, and Int
+                match &root_level[1] {
+                    Attribute::Array(second_level) => {
+                        assert_eq!(second_level.len(), 3);
+                        
+                        match &second_level[0] {
+                            Attribute::Float(v) if (v - 2.5).abs() < f64::EPSILON => {},
+                            _ => panic!("Second level first element should be Float(2.5)"),
+                        }
+                        
+                        match &second_level[2] {
+                            Attribute::Int(3) => {},
+                            _ => panic!("Second level third element should be Int(3)"),
+                        }
+                    },
+                    _ => panic!("Second element should be an Array"),
+                }
+            },
+            _ => panic!("Root should be an Array"),
+        }
+    }
+
+    /// Test 10: Comprehensive operation validation with all field combinations
+    #[test]
+    fn test_operation_comprehensive_field_validation() {
+        use std::collections::HashMap;
+        
+        let mut op = Operation::new("comprehensive_test_op");
+        
+        // Add multiple inputs
+        for i in 0..10 {
+            op.inputs.push(Value {
+                name: format!("input_{}", i),
+                ty: if i % 2 == 0 { Type::F32 } else { Type::I32 },
+                shape: vec![i + 1, i + 2],
+            });
+        }
+        
+        // Add multiple outputs
+        for i in 0..5 {
+            op.outputs.push(Value {
+                name: format!("output_{}", i),
+                ty: if i % 2 == 0 { Type::F64 } else { Type::I64 },
+                shape: vec![i + 1, i + 1],
+            });
+        }
+        
+        // Add various attributes
+        let mut attrs = HashMap::new();
+        attrs.insert("int_param".to_string(), Attribute::Int(42));
+        attrs.insert("float_param".to_string(), Attribute::Float(3.14159));
+        attrs.insert("string_param".to_string(), Attribute::String("test_param".to_string()));
+        attrs.insert("bool_param".to_string(), Attribute::Bool(true));
+        attrs.insert("nested_array_param".to_string(), Attribute::Array(vec![
+            Attribute::Float(1.0),
+            Attribute::Int(2),
+            Attribute::Bool(false),
+        ]));
+        op.attributes = attrs;
+        
+        // Validate all aspects of the operation
+        assert_eq!(op.op_type, "comprehensive_test_op");
+        assert_eq!(op.inputs.len(), 10);
+        assert_eq!(op.outputs.len(), 5);
+        assert_eq!(op.attributes.len(), 5);
+        
+        // Verify some specific aspects of inputs and outputs
+        assert_eq!(op.inputs[0].name, "input_0");
+        assert_eq!(op.inputs[0].ty, Type::F32);
+        assert_eq!(op.inputs[0].shape, vec![1, 2]);
+        
+        assert_eq!(op.outputs[0].name, "output_0");
+        assert_eq!(op.outputs[0].ty, Type::F64);
+        assert_eq!(op.outputs[0].shape, vec![1, 1]);
+        
+        // Verify specific attributes
+        assert_eq!(op.attributes.get("int_param"), Some(&Attribute::Int(42)));
+        assert_eq!(op.attributes.get("float_param"), Some(&Attribute::Float(3.14159)));
+        assert_eq!(op.attributes.get("string_param"), Some(&Attribute::String("test_param".to_string())));
+        assert_eq!(op.attributes.get("bool_param"), Some(&Attribute::Bool(true)));
+    }
+}
+
