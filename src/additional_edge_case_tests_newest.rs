@@ -4,7 +4,7 @@
 #[cfg(test)]
 mod additional_edge_case_tests {
     use super::*;
-    use crate::ir::{Module, Value, Type, Operation};
+    use crate::ir::{Module, Value, Type, Operation, TypeExtensions};
     use crate::ImpulseCompiler;
     use std::collections::HashMap;
 
@@ -211,12 +211,12 @@ mod additional_edge_case_tests {
     #[test]
     fn test_value_with_special_names() {
         let special_names = vec![
-            "",                    // Empty string
-            " ",                   // Single space
-            "\t\n\r",             // Whitespace characters
-            "特殊字符",              // Unicode characters
-            "🚀🔥🌟",              // Emoji characters
-            "a".repeat(1_000_000), // Very long string (reduced for performance)
+            "".to_string(),                    // Empty string
+            " ".to_string(),                   // Single space
+            "\\t\\n\\r".to_string(),             // Whitespace characters
+            "特殊字符".to_string(),              // Unicode characters
+            "🚀🔥🌟".to_string(),              // Emoji characters
+            "a".repeat(1_000_000),             // Very long string (reduced for performance)
         ];
         
         for (i, name) in special_names.iter().enumerate() {
