@@ -35,9 +35,6 @@ mod additional_comprehensive_tests;
 mod new_more_edge_cases;
 
 #[cfg(test)]
-mod new_edge_case_tests;
-
-#[cfg(test)]
 mod final_edge_case_tests;
 
 #[cfg(test)]
@@ -81,6 +78,9 @@ mod additional_edge_case_tests_extended;
 
 #[cfg(test)]
 mod additional_edge_case_tests_new;
+
+#[cfg(test)]
+mod new_edge_case_tests_additional;
 
 // Re-export key types at the crate level
 pub use compiler::{Compiler, CompilationResult};
@@ -127,7 +127,7 @@ impl ImpulseCompiler {
 }
 
 #[cfg(test)]
-mod tests {
+mod tests_old {
     use super::*;
     use crate::ir::{Module, Value, Type, Operation};
 
