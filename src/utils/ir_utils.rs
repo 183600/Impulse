@@ -49,8 +49,9 @@ pub fn type_to_string(ty: &Type) -> String {
         Type::I64 => "i64".to_string(),
         Type::Bool => "bool".to_string(),
         Type::Tensor { element_type, shape } => {
+            let element_str = type_to_string(element_type);
             let shape_str = shape.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(", ");
-            format!("tensor<{:?}, [{}]>", element_type, shape_str)
+            format!("tensor<{}, [{}]>", element_str, shape_str)
         }
     }
 }
@@ -73,31 +74,82 @@ pub fn find_operations_by_type<'a>(module: &'a crate::ir::Module, op_type: &str)
 
 /// Helper function to calculate tensor size in bytes based on type and shape
 pub fn calculate_tensor_size(data_type: &Type, shape: &[usize]) -> Result<usize, String> {
-    let num_elements = if shape.is_empty() {
-        // Scalar has 1 element
-        1
-    } else {
-        shape.iter().try_fold(1usize, |acc, &dim| {
-            acc.checked_mul(dim).ok_or_else(|| "Overflow in shape calculation".to_string())
-        })?
-    };
+    match data_type {
+        Type::F32 => {
+            let num_elements = if shape.is_empty() {
+                // Scalar has 1 element
+                1
+            } else {
+                shape.iter().try_fold(1usize, |acc, &dim| {
+                    acc.checked_mul(dim).ok_or_else(|| "Overflow in shape calculation".to_string())
+                })?
+            };
+            num_elements.checked_mul(4).ok_or_else(|| "Overflow in final size calculation".to_string())
+        },
+        Type::F64 => {
+            let num_elements = if shape.is_empty() {
+                // Scalar has 1 element
+                1
+            } else {
+                shape.iter().try_fold(1usize, |acc, &dim| {
+                    acc.checked_mul(dim).ok_or_else(|| "Overflow in shape calculation".to_string())
+                })?
+            };
+            num_elements.checked_mul(8).ok_or_else(|| "Overflow in final size calculation".to_string())
+        },
+        Type::I32 => {
+            let num_elements = if shape.is_empty() {
+                // Scalar has 1 element
+                1
+            } else {
+                shape.iter().try_fold(1usize, |acc, &dim| {
+                    acc.checked_mul(dim).ok_or_else(|| "Overflow in shape calculation".to_string())
+                })?
+            };
+            num_elements.checked_mul(4).ok_or_else(|| "Overflow in final size calculation".to_string())
+        },
+        Type::I64 => {
+            let num_elements = if shape.is_empty() {
+                // Scalar has 1 element
+                1
+            } else {
+                shape.iter().try_fold(1usize, |acc, &dim| {
+                    acc.checked_mul(dim).ok_or_else(|| "Overflow in shape calculation".to_string())
+                })?
+            };
+            num_elements.checked_mul(8).ok_or_else(|| "Overflow in final size calculation".to_string())
+        },
+        Type::Bool => {
+            let num_elements = if shape.is_empty() {
+                // Scalar has 1 element
+                1
+            } else {
+                shape.iter().try_fold(1usize, |acc, &dim| {
+                    acc.checked_mul(dim).ok_or_else(|| "Overflow in shape calculation".to_string())
+                })?
+            };
+            num_elements.checked_mul(1).ok_or_else(|| "Overflow in final size calculation".to_string())
+        },
+        Type::Tensor { element_type, shape: inner_shape } => {
+            // For nested tensors, we need to combine the outer shape with the inner shape
+            // First calculate the number of elements in the outer shape
+            let outer_elements = if shape.is_empty() {
+                // If outer shape is empty, just consider the tensor as a single entity
+                1
+            } else {
+                shape.iter().try_fold(1usize, |acc, &dim| {
+                    acc.checked_mul(dim).ok_or_else(|| "Overflow in outer shape calculation".to_string())
+                })?
+            };
 
-    let size_per_element = match data_type {
-        Type::F32 => 4,
-        Type::F64 => 8,
-        Type::I32 => 4,
-        Type::I64 => 8,
-        Type::Bool => 1,
-        Type::Tensor { .. } => {
-            // For nested tensors, we compute the size recursively
-            // This is a simplified approximation - in practice, you might want
-            // to calculate the full nested structure size
-            8 // Approximate pointer size for nested tensors
-        }
-    };
+            // Then calculate the size of the inner tensor
+            let inner_tensor_size = calculate_tensor_size(element_type, inner_shape)?;
 
-    num_elements.checked_mul(size_per_element)
-        .ok_or_else(|| "Overflow in final size calculation".to_string())
+            // Total size is outer elements * inner tensor size
+            outer_elements.checked_mul(inner_tensor_size)
+                .ok_or_else(|| "Overflow in nested tensor size calculation".to_string())
+        },
+    }
 }
 
 #[cfg(test)]

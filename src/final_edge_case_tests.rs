@@ -534,7 +534,7 @@ mod remaining_edge_case_tests {
         assert_eq!(complex_op.op_type, "fully_complex_op");
         assert_eq!(complex_op.inputs.len(), 4);
         assert_eq!(complex_op.outputs.len(), 2);
-        assert_eq!(complex_op.attributes.len(), 8);  // 2 int + 2 string + 2 bool + 2 array
+        assert_eq!(complex_op.attributes.len(), 9);  // 1 int + 1 float + 2 string + 2 bool + 3 array
         
         // Verify specific components
         assert_eq!(complex_op.inputs[0].name, "input_matrix_1");

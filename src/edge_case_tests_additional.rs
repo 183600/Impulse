@@ -172,7 +172,7 @@ mod additional_edge_case_tests {
         op.attributes = attrs;
         
         // Verify all attributes were added
-        assert_eq!(op.attributes.len(), 350); // 100 + 100 + 100 + 100 + 50
+        assert_eq!(op.attributes.len(), 450); // 100 + 100 + 100 + 100 + 50
         
         // Verify we can access some attributes
         assert_eq!(

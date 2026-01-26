@@ -57,6 +57,33 @@ pub fn validate_operation(op: &Operation) -> Result<(), String> {
         return Err("Operation type name is unusually long".to_string());
     }
     
+    // Check for duplicate names within inputs
+    let mut seen_names = std::collections::HashSet::new();
+    for input in &op.inputs {
+        if seen_names.contains(&input.name) {
+            return Err(format!("Duplicate input name detected: {}", input.name));
+        }
+        seen_names.insert(&input.name);
+    }
+    
+    // Check for duplicate names within outputs
+    let mut output_names = std::collections::HashSet::new();
+    for output in &op.outputs {
+        if output_names.contains(&output.name) {
+            return Err(format!("Duplicate output name detected: {}", output.name));
+        }
+        output_names.insert(&output.name);
+    }
+    
+    // Check for conflict between input names and output names
+    for input in &op.inputs {
+        for output in &op.outputs {
+            if input.name == output.name {
+                return Err(format!("Input and output share the same name: {}", input.name));
+            }
+        }
+    }
+    
     Ok(())
 }
 
@@ -82,10 +109,36 @@ pub fn validate_module_shapes(module: &crate::ir::Module) -> Result<(), String> 
     Ok(())
 }
 
+/// Validates that a module has unique names for inputs and outputs
+pub fn validate_module_uniqueness(module: &crate::ir::Module) -> Result<(), String> {
+    // Check for duplicate input names
+    let mut input_names = std::collections::HashSet::new();
+    for input in &module.inputs {
+        if input_names.contains(&input.name) {
+            return Err(format!("Duplicate input name detected: {}", input.name));
+        }
+        input_names.insert(&input.name);
+    }
+    
+    // Check for duplicate output names
+    let mut output_names = std::collections::HashSet::new();
+    for output in &module.outputs {
+        if output_names.contains(&output.name) {
+            return Err(format!("Duplicate output name detected: {}", output.name));
+        }
+        output_names.insert(&output.name);
+    }
+
+    Ok(())
+}
+
 /// Validates an entire module for consistency and correctness
 pub fn validate_module(module: &crate::ir::Module) -> Result<(), String> {
     // First validate the basic shapes
     validate_module_shapes(module)?;
+    
+    // Validate uniqueness of names
+    validate_module_uniqueness(module)?;
     
     // Additional module-level validations
     if module.name.is_empty() {
