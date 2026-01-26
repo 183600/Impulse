@@ -8,15 +8,17 @@ mod additional_edge_case_tests {
     /// Test 1: Maximum possible tensor dimensions
     #[test]
     fn test_maximum_tensor_dimensions() {
-        // Test creating a tensor with maximum allowed dimensions
-        let max_dims = vec![usize::MAX, 1];  // This would likely overflow when calculating total size
+        // Test creating a tensor with dimensions that would cause overflow when multiplied
+        // To cause overflow, we need values where the multiplication result exceeds usize::MAX
+        // For example: (usize::MAX/2 + 1) * 2 should overflow
+        let max_dims = vec![usize::MAX/2 + 1, 2];  // This would definitely overflow when calculating total size
         let value = Value {
             name: "max_dims_tensor".to_string(),
             ty: Type::F32,
             shape: max_dims,
         };
 
-        // Testing the calculation of total elements which might overflow
+        // Testing the calculation of total elements which should overflow
         let total_elements: Option<usize> = value.shape.iter()
             .try_fold(1_usize, |acc, &x| acc.checked_mul(x));
         
@@ -179,7 +181,7 @@ mod additional_edge_case_tests {
     #[test]
     fn test_integer_overflow_protection_in_tensor_calculations() {
         // Test a combination of dimensions that would cause overflow
-        let problem_dims = vec![100_000, 100_000, 100]; // Would be 1 trillion elements
+        let problem_dims = vec![usize::MAX/2 + 1, 2]; // This will definitely cause overflow
         
         // Calculate with checked multiplication to prevent overflow
         let overflow_result = problem_dims.iter().try_fold(1usize, |acc, &x| acc.checked_mul(x));
@@ -199,14 +201,14 @@ mod additional_edge_case_tests {
         let overflow_value = Value {
             name: "overflow_tensor".to_string(),
             ty: Type::F32,
-            shape: vec![100_000, 100_000],
+            shape: vec![usize::MAX/2 + 1, 2],
         };
         
-        // Safe calculation that won't panic
+        // Safe calculation that should result in overflow detection
         let safe_calculation = overflow_value.shape.iter()
             .try_fold(1usize, |acc, &x| acc.checked_mul(x));
         
-        assert!(safe_calculation.is_some()); // Actually won't overflow on our test values
+        assert!(safe_calculation.is_none()); // Should overflow
     }
 
     /// Test 7: Handling extreme numbers of attributes

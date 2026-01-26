@@ -68,6 +68,14 @@ pub enum Attribute {
     Bool(bool),
 }
 
+impl Value {
+    /// Calculate the total number of elements in the tensor represented by this value
+    /// Returns None if the calculation would overflow
+    pub fn num_elements(&self) -> Option<usize> {
+        self.shape.iter().try_fold(1usize, |acc, &dim| acc.checked_mul(dim))
+    }
+}
+
 
 impl Module {
     pub fn new(name: impl Into<String>) -> Self {

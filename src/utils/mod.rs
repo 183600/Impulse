@@ -2,6 +2,19 @@ use crate::ir::{Module, Type};
 use anyhow::Result;
 use std::collections::HashMap;
 
+/// Safely calculate the total size of a tensor by multiplying all dimensions together
+/// Returns None if the multiplication would overflow
+pub fn calculate_tensor_size_safe(shape: &[usize]) -> Option<usize> {
+    if shape.is_empty() {
+        // Scalar has size 1
+        return Some(1);
+    }
+    
+    shape.iter().try_fold(1usize, |acc, &dim| {
+        acc.checked_mul(dim)
+    })
+}
+
 /// Utility functions for working with the IR
 pub mod ir_utils {
     use super::*;
@@ -10,33 +23,46 @@ pub mod ir_utils {
     pub fn calculate_tensor_size(ty: &Type, shape: &[usize]) -> Result<usize> {
         match ty {
             Type::F32 => {
-                let num_elements: usize = shape.iter().copied().product();
+                let num_elements = calculate_tensor_elements(shape).ok_or_else(|| anyhow::anyhow!("Overflow in tensor size calculation"))?;
                 Ok(num_elements * 4)
             },
             Type::F64 => {
-                let num_elements: usize = shape.iter().copied().product();
+                let num_elements = calculate_tensor_elements(shape).ok_or_else(|| anyhow::anyhow!("Overflow in tensor size calculation"))?;
                 Ok(num_elements * 8)
             },
             Type::I32 => {
-                let num_elements: usize = shape.iter().copied().product();
+                let num_elements = calculate_tensor_elements(shape).ok_or_else(|| anyhow::anyhow!("Overflow in tensor size calculation"))?;
                 Ok(num_elements * 4)
             },
             Type::I64 => {
-                let num_elements: usize = shape.iter().copied().product();
+                let num_elements = calculate_tensor_elements(shape).ok_or_else(|| anyhow::anyhow!("Overflow in tensor size calculation"))?;
                 Ok(num_elements * 8)
             },
             Type::Bool => {
-                let num_elements: usize = shape.iter().copied().product();
+                let num_elements = calculate_tensor_elements(shape).ok_or_else(|| anyhow::anyhow!("Overflow in tensor size calculation"))?;
                 Ok(num_elements)  // Boolean typically takes 1 byte
             },
             Type::Tensor { element_type, shape: inner_shape } => {
                 // For tensor types, multiply the outer shape by the inner shape
-                let outer_num_elements: usize = shape.iter().copied().product();
-                let inner_num_elements: usize = inner_shape.iter().copied().product();
+                let outer_num_elements = calculate_tensor_elements(shape).ok_or_else(|| anyhow::anyhow!("Overflow in outer tensor size calculation"))?;
+                let inner_num_elements = calculate_tensor_elements(inner_shape).ok_or_else(|| anyhow::anyhow!("Overflow in inner tensor size calculation"))?;
+                
+                // Calculate the size of the element type for tensor types (shape is empty for type-level calculation)
                 let element_size = calculate_tensor_size(element_type, &[])?;
                 Ok(outer_num_elements * inner_num_elements * element_size)
             },
         }
+    }
+    
+    /// Calculate the number of elements in a tensor shape, returning None if it would overflow
+    fn calculate_tensor_elements(shape: &[usize]) -> Option<usize> {
+        if shape.is_empty() {
+            return Some(1); // Scalar has 1 element
+        }
+        
+        shape.iter().try_fold(1usize, |acc, &dim| {
+            acc.checked_mul(dim)
+        })
     }
     
     /// Count operations in a module by type
