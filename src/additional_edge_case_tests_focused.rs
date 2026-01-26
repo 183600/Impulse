@@ -193,11 +193,11 @@ mod additional_edge_case_tests {
     #[test]
     fn test_string_attributes_with_control_codes() {
         // Test string attributes with various special characters
-        let special_strings = [
-            "\0",               // Null byte
-            "\n\t\r",          // Whitespace controls
-            "\x01\x02\x1F",    // Control characters
-            "🚀🔥中文",         // Emoji and Unicode
+        let special_strings: [String; 5] = [
+            "\0".to_string(),               // Null byte
+            "\n\t\r".to_string(),          // Whitespace controls
+            "\x01\x02\x1F".to_string(),    // Control characters
+            "🚀🔥中文".to_string(),         // Emoji and Unicode
             "a".repeat(100_000), // Very long string
         ];
 
@@ -246,7 +246,7 @@ mod additional_edge_case_tests {
 
         // Test deeply nested array attribute
         let mut nested_array = Attribute::Int(42);
-        for i in 0..100 {  // Create 100 levels of nesting
+        for _i in 0..100 {  // Create 100 levels of nesting
             nested_array = Attribute::Array(vec![nested_array]);
         }
         
