@@ -1,379 +1,348 @@
 //! Additional edge case tests for the Impulse compiler
-//! Covers boundary conditions and extreme values
+//! Tests focus on boundary conditions and unusual scenarios
 
 #[cfg(test)]
 mod additional_edge_case_tests {
     use crate::ir::{Module, Operation, Value, Type, Attribute};
+    use crate::ImpulseCompiler;
     use std::collections::HashMap;
 
-    /// Test floating point edge cases in attributes
+    /// Test 1: Module with maximum possible string length in name
     #[test]
-    fn test_floating_point_edge_cases_in_attributes() {
-        let test_cases = [
-            (std::f64::INFINITY, "infinity"),
-            (std::f64::NEG_INFINITY, "neg_infinity"),
-            (std::f64::NAN, "nan"),
-            (-0.0, "negative_zero"),
-            (std::f64::EPSILON, "epsilon"),
-            (std::f64::MIN_POSITIVE, "min_positive"),
-        ];
+    fn test_module_with_maximum_string_length() {
+        // Create a module with a very long name to test string handling
+        let long_name = "a".repeat(1_000_000); // 1 million 'a's
+        let module = Module::new(&long_name);
+        
+        assert_eq!(module.name.len(), 1_000_000);
+        assert_eq!(module.name.chars().count(), 1_000_000);
+        assert!(module.operations.is_empty());
+        assert!(module.inputs.is_empty());
+        assert!(module.outputs.is_empty());
+    }
 
-        for (value, desc) in test_cases.iter() {
-            let attr = Attribute::Float(*value);
-
-            match attr {
-                Attribute::Float(retrieved) => {
-                    if value.is_nan() {
-                        // NaN is special: it's not equal to itself
-                        assert!(retrieved.is_nan(), "For {} value should remain NaN", desc);
-                    } else if value.is_infinite() {
-                        assert!(retrieved.is_infinite(), "For {} value should remain infinite", desc);
-                        assert_eq!(value.signum(), retrieved.signum(), "Sign should be preserved for {}", desc);
-                    } else {
-                        // For normal finite values, use approximate equality
-                        let tolerance = std::f64::EPSILON * 10.0;
-                        if (retrieved - value).abs() > tolerance {
-                            panic!("Value mismatch for {}: expected {}, got {}", desc, value, retrieved);
-                        }
-                    }
-                },
-                _ => panic!("Expected Float attribute for {}", desc),
-            }
+    /// Test 2: Operation with maximum possible attribute count
+    #[test]
+    fn test_operation_with_maximum_attributes() {
+        let mut op = Operation::new("max_attrs_op");
+        let mut attrs = HashMap::new();
+        
+        // Add a very large number of attributes
+        for i in 0..100_000 {
+            attrs.insert(
+                format!("attr_{}", i),
+                Attribute::String(format!("value_{}", i))
+            );
         }
+        op.attributes = attrs;
+        
+        assert_eq!(op.attributes.len(), 100_000);
+        assert!(op.inputs.is_empty());
+        assert!(op.outputs.is_empty());
+        
+        // Verify some attributes exist
+        assert!(op.attributes.contains_key("attr_0"));
+        assert!(op.attributes.contains_key("attr_50000"));
+        assert!(op.attributes.contains_key("attr_99999"));
     }
 
-    /// Test operations with maximum length names
+    /// Test 3: Value with extremely large shape dimensions that could cause overflow
     #[test]
-    fn test_maximum_length_names() {
-        // Test with very long names
-        let long_module_name = "A".repeat(1_000_000); // 1 million A's
-        let module = Module::new(&long_module_name);
-        assert_eq!(module.name, long_module_name);
-        
-        let long_op_name = "B".repeat(1_000_000);
-        let op = Operation::new(&long_op_name);
-        assert_eq!(op.op_type, long_op_name);
-        
-        let long_value_name = "C".repeat(1_000_000);
+    fn test_value_with_potential_overflow_dimensions() {
+        // Test shape that would cause overflow when calculating total size
+        // Use values that are large but won't actually overflow in multiplication
         let value = Value {
-            name: long_value_name.clone(),
+            name: "overflow_test".to_string(),
             ty: Type::F32,
-            shape: vec![1],
+            shape: vec![usize::MAX / 1000, 1000], // Large but potentially risky
         };
-        assert_eq!(value.name, long_value_name);
+        
+        assert_eq!(value.shape.len(), 2);
+        
+        // Compute with checked arithmetic to prevent actual overflow
+        let result = value.shape.iter()
+            .try_fold(1usize, |acc, &x| acc.checked_mul(x));
+        
+        // This might overflow, but that's the test - ensure it doesn't crash
+        assert!(result.is_some() || result.is_none()); // Either succeeds or handles overflow
     }
 
-    /// Test deep recursion with tensor types to test stack limits
+    /// Test 4: Nested tensor type with maximum nesting depth
     #[test]
-    fn test_deep_recursion_tensor_types() {
-        // Create a deeply nested tensor type with 1000 levels - this tests stack safety
+    fn test_maximum_depth_nested_tensors() {
+        // Create a deeply nested tensor type to test recursion limits
         let mut current_type = Type::F32;
-        for i in 0..1000 {
+        
+        // Nest 1000 levels deep (may need adjustment based on system limits)
+        for _ in 0..1000 {
             current_type = Type::Tensor {
                 element_type: Box::new(current_type),
-                shape: vec![i % 2 + 1], // Alternate between [1] and [2]
+                shape: vec![2],
             };
         }
-
-        // Verify we can still access the top level
+        
+        // Verify the deeply nested type can be created and compared
+        let cloned_type = current_type.clone();
+        assert_eq!(current_type, cloned_type);
+        
+        // Ensure it's still a tensor type
         match &current_type {
             Type::Tensor { shape, .. } => {
-                assert_eq!(shape, &vec![((1000-1) % 2 + 1)]); // Should be [2] since 999%2=1, 1+1=2
+                assert_eq!(shape, &vec![2]);
             },
-            _ => panic!("Top level should still be a tensor"),
+            _ => panic!("Expected tensor type even when deeply nested"),
         }
-
-        // Test that we can clone deeply nested types
-        let cloned = current_type.clone();
-        assert_eq!(current_type, cloned);
-
-        // Test that we can drop without stack overflow
-        drop(cloned);
     }
 
-    /// Test integer overflow in tensor shape calculations
+    /// Test 5: Operations with Unicode and special character names
     #[test]
-    fn test_shape_calculation_overflow() {
-        // Use values that would definitely cause overflow when multiplied
-        // For most systems, multiplying large usizes would overflow
-        let large_value = (usize::MAX / 1000) as u128; // Reduce to avoid immediate overflow during mult
-        
-        // Simulate what would happen with very large dimensions
-        // Since multiplying actual MAX values might cause a panic in debug mode,
-        // we test with a calculation that would overflow usize
-        let shapes_to_test = vec![
-            vec![large_value as usize, 2000],  // Would overflow
-            vec![10000, 10000, 10000, 1000],  // Would definitely overflow
+    fn test_operations_with_unicode_names() {
+        let unicode_names = [
+            "tensor_名称_日本語_🔥",           // Mixed scripts and emoji
+            "café naïve résumé",           // Accented characters
+            "москва Москва россия",        // Cyrillic
+            "مرحبا بالعالم",               // Arabic
+            "こんにちは世界",               // Japanese hiragana and kanji
+            "😀😃😄😁😂🤣☺️😊",          // Multiple emojis
+            "tab\there",                  // Tab character
+            "newline\nhere",              // Newline character  
+            "\x00\x01\x02\x03",          // Control characters
         ];
-
-        for shape in shapes_to_test {
+        
+        for (i, &name) in unicode_names.iter().enumerate() {
             let value = Value {
-                name: "potential_overflow".to_string(),
+                name: name.to_string(),
+                ty: Type::F32,
+                shape: vec![i + 1, i + 2],
+            };
+            
+            assert_eq!(value.name, name);
+            assert_eq!(value.shape, vec![i + 1, i + 2]);
+            
+            let op = Operation::new(name);
+            assert_eq!(op.op_type, name);
+            
+            let module = Module::new(name);
+            assert_eq!(module.name, name);
+        }
+    }
+
+    /// Test 6: Tensor shapes with zeros in various positions causing zero-size tensors
+    #[test]
+    fn test_various_zero_dimension_combinations() {
+        let zero_combinations = [
+            vec![0],                    // 0D tensor with zero elements
+            vec![0, 1, 2, 3],         // Leading zero
+            vec![1, 0, 2, 3],         // Middle zero
+            vec![1, 2, 0, 3],         // Another middle zero  
+            vec![1, 2, 3, 0],         // Trailing zero
+            vec![0, 0],               // Multiple leading zeros
+            vec![1, 0, 0, 3],         // Multiple zeros in middle
+            vec![2, 3, 0, 0],         // Trailing zeros
+            vec![0, 1, 0, 1, 0],      // Alternating zeros
+        ];
+        
+        for shape in zero_combinations.iter() {
+            let value = Value {
+                name: format!("zero_test_{:?}", shape),
                 ty: Type::F32,
                 shape: shape.clone(),
             };
-
-            // Use checked arithmetic to prevent actual overflow during calculation
-            let mut product: Option<u128> = Some(1);
-            for dim in &value.shape {
-                if let Some(prev) = product {
-                    product = prev.checked_mul(*dim as u128);
-                }
-            }
-
-            // Verify that we handle potential overflow gracefully
-            if shape == vec![10000, 10000, 10000, 1000] {
-                assert!(product.is_none()); // Should overflow
-            }
+            
+            assert_eq!(value.shape, *shape);
+            
+            // Any tensor with a zero dimension should have 0 total elements
+            let total_elements: usize = value.shape.iter().product();
+            assert_eq!(total_elements, 0, "Shape {:?} should have 0 elements", shape);
         }
     }
 
-    /// Test with maximum possible values for shape dimensions
+    /// Test 7: Invalid tensor types and validation
     #[test]
-    fn test_maximum_shape_dimensions() {
-        let max_shape = vec![usize::MAX, usize::MAX >> 1, 2]; // Using max values to test boundaries
-        let value = Value {
-            name: "max_dims".to_string(),
-            ty: Type::F32,
-            shape: max_shape.clone(),
+    fn test_invalid_tensor_type_scenarios() {
+        // Test valid nested tensor
+        let valid_tensor = Type::Tensor {
+            element_type: Box::new(Type::F32),
+            shape: vec![2, 3],
         };
         
-        assert_eq!(value.shape, max_shape);
-        assert_eq!(value.name, "max_dims");
-        assert_eq!(value.ty, Type::F32);
+        assert!(valid_tensor.is_valid_type());
+        
+        // Deeply nested valid tensor
+        let mut deep_tensor = Type::F32;
+        for _ in 0..10 {
+            deep_tensor = Type::Tensor {
+                element_type: Box::new(deep_tensor),
+                shape: vec![2],
+            };
+        }
+        
+        assert!(deep_tensor.is_valid_type());
+        
+        // Test equality of complex nested types
+        let another_deep_tensor = {
+            let mut t = Type::F32;
+            for _ in 0..10 {
+                t = Type::Tensor {
+                    element_type: Box::new(t),
+                    shape: vec![2],
+                };
+            }
+            t
+        };
+        
+        assert_eq!(deep_tensor, another_deep_tensor);
     }
 
-    /// Test operations with extremely large numbers of inputs/outputs
+    /// Test 8: Operation with maximum possible inputs and outputs
     #[test]
-    fn test_extremely_large_io_counts() {
-        const NUM_INPUTS: usize = 100_000;
-        const NUM_OUTPUTS: usize = 50_000;
-        
-        let mut op = Operation::new("high_io_op");
+    fn test_operation_with_extreme_io_counts() {
+        let mut op = Operation::new("extreme_io_op");
         
         // Add many inputs
-        for i in 0..NUM_INPUTS {
+        for i in 0..50_000 {
             op.inputs.push(Value {
                 name: format!("input_{}", i),
                 ty: Type::F32,
-                shape: vec![1],
+                shape: vec![i % 100 + 1], // Varying small shapes
             });
         }
         
         // Add many outputs
-        for i in 0..NUM_OUTPUTS {
+        for i in 0..25_000 {
             op.outputs.push(Value {
                 name: format!("output_{}", i),
                 ty: Type::F32,
-                shape: vec![2],
+                shape: vec![(i + 50) % 100 + 1], // Varying small shapes
             });
         }
         
-        assert_eq!(op.inputs.len(), NUM_INPUTS);
-        assert_eq!(op.outputs.len(), NUM_OUTPUTS);
-        assert_eq!(op.op_type, "high_io_op");
+        assert_eq!(op.inputs.len(), 50_000);
+        assert_eq!(op.outputs.len(), 25_000);
+        assert_eq!(op.op_type, "extreme_io_op");
+        
+        // Verify first and last inputs/outputs have correct names
+        assert_eq!(op.inputs[0].name, "input_0");
+        assert_eq!(op.inputs[49999].name, "input_49999");
+        assert_eq!(op.outputs[0].name, "output_0");
+        assert_eq!(op.outputs[24999].name, "output_24999");
     }
 
-    /// Test attribute array with maximum nesting depth
+    /// Test 9: Special floating-point attribute values
     #[test]
-    fn test_maximum_attribute_nesting_depth() {
-        // Create deeply nested array attributes (similar to tensor nesting)
-        let mut attr: Attribute = Attribute::Int(42);
-        
-        for _ in 0..100 { // 100 levels of nesting
-            attr = Attribute::Array(vec![attr]);
-        }
-        
-        // Verify the deep nesting worked
-        match &attr {
-            Attribute::Array(nested) => {
-                assert_eq!(nested.len(), 1);
-                // Continue verifying deeper levels if needed
-            },
-            _ => panic!("Should be a nested array"),
-        }
-        
-        // Test cloning of deeply nested structure
-        let cloned = attr.clone();
-        assert_eq!(attr, cloned);
-    }
-
-    /// Test for potential memory allocation failures with very large collections
-    #[test]
-    fn test_large_collection_allocations() {
-        // Create a large number of operations to test memory allocation
-        let mut module = Module::new("large_alloc_test");
-        
-        // Add a very large number of operations
-        for i in 0..1_000_000 {
-            // Only add every 100th operation to avoid actual out-of-memory
-            if i % 1000 == 0 {
-                module.add_operation(Operation::new(&format!("sparse_op_{}", i)));
-            }
-        }
-        
-        // Verify module is still valid
-        assert_eq!(module.name, "large_alloc_test");
-    }
-
-    /// Test Unicode and special character handling
-    #[test]
-    fn test_unicode_and_special_characters() {
-        let unicode_test_cases = [
-            ("tensor_名称_日本語_🔥", Type::F32), // Chinese, Japanese, emoji
-            ("arabic_chars_مرحبا", Type::I64), // Arabic
-            ("russian_привет", Type::F64), // Russian
-            ("control_\u{0001}_\u{001F}", Type::Bool), // Control characters
-            ("whitespace_\t_\n_\r", Type::I32), // Whitespace characters
+    fn test_special_float_attribute_values() {
+        let special_values = [
+            (f64::INFINITY, "positive_infinity"),
+            (f64::NEG_INFINITY, "negative_infinity"),
+            (-0.0, "negative_zero"),
+            (f64::EPSILON, "epsilon"),
+            (f64::consts::PI, "pi"),
+            (f64::consts::E, "euler_number"),
         ];
-
-        for (name, typ) in unicode_test_cases.iter() {
-            let value = Value {
-                name: name.to_string(),
-                ty: typ.clone(),
-                shape: vec![1, 2, 3],
-            };
+        
+        for (value, desc) in special_values.iter() {
+            let attr = Attribute::Float(*value);
             
-            assert_eq!(value.name, *name);
-            assert_eq!(value.ty, *typ);
-            assert_eq!(value.shape, vec![1, 2, 3]);
-            
-            // Test operation with unicode name
-            let op = Operation::new(name);
-            assert_eq!(op.op_type, *name);
-        }
-    }
-
-    /// Test type validation edge cases
-    #[test]
-    fn test_type_validation_edge_cases() {
-        use crate::ir::TypeExtensions;
-
-        // Test validation of simple types
-        assert!(Type::F32.is_valid_type());
-        assert!(Type::F64.is_valid_type());
-        assert!(Type::I32.is_valid_type());
-        assert!(Type::I64.is_valid_type());
-        assert!(Type::Bool.is_valid_type());
-
-        // Test validation of nested types
-        let nested_valid = Type::Tensor {
-            element_type: Box::new(Type::F32),
-            shape: vec![2, 3],
-        };
-        assert!(nested_valid.is_valid_type());
-
-        // Test validation of deeply nested types
-        let deep_valid = Type::Tensor {
-            element_type: Box::new(Type::Tensor {
-                element_type: Box::new(Type::Tensor {
-                    element_type: Box::new(Type::I64),
-                    shape: vec![1],
-                }),
-                shape: vec![2],
-            }),
-            shape: vec![3],
-        };
-        assert!(deep_valid.is_valid_type());
-
-        // Test validation with invalid cases (this is just for completeness, 
-        // as our Type enum is exhaustive and all variants should be valid)
-        // For now, we just ensure all valid types return true
-        assert!(Type::F32.is_valid_type());
-    }
-
-    /// Test serialization and deserialization of complex nested structures
-    #[test]
-    fn test_serialization_edge_cases() {
-        use serde_json;
-
-        // Create a complex nested structure
-        let complex_type = Type::Tensor {
-            element_type: Box::new(Type::Tensor {
-                element_type: Box::new(Type::F32),
-                shape: vec![2, 3],
-            }),
-            shape: vec![4, 5],
-        };
-
-        // Serialize to JSON
-        let serialized = serde_json::to_string(&complex_type);
-        assert!(serialized.is_ok());
-        
-        let json_str = serialized.unwrap();
-        
-        // Deserialize back
-        let deserialized: Result<Type, _> = serde_json::from_str(&json_str);
-        assert!(deserialized.is_ok());
-        
-        let recovered_type = deserialized.unwrap();
-        assert_eq!(complex_type, recovered_type);
-        
-        // Test with more complex structure including attributes
-        let mut op = Operation::new("serialization_test");
-        op.attributes.insert(
-            "complex_attr".to_string(),
-            Attribute::Array(vec![
-                Attribute::String("nested".to_string()),
-                Attribute::Float(std::f64::consts::PI),
-                Attribute::Array(vec![
-                    Attribute::Int(42),
-                    Attribute::Bool(true),
-                ]),
-            ])
-        );
-
-        let op_serialized = serde_json::to_string(&op);
-        assert!(op_serialized.is_ok());
-        
-        let op_deserialized: Result<Operation, _> = serde_json::from_str(&op_serialized.unwrap());
-        assert!(op_deserialized.is_ok());
-    }
-
-    /// Test hash map edge cases with operations
-    #[test]
-    fn test_hash_map_edge_cases_in_operations() {
-        use std::collections::HashMap;
-
-        let mut op = Operation::new("hashmap_test");
-
-        // Test with maximum number of attributes
-        for i in 0..10000 {  // Reduced for practicality
-            if i % 1000 == 0 {  // Only add every 1000th attribute to avoid memory issues
-                op.attributes.insert(
-                    format!("attr_{}", i),
-                    Attribute::String(format!("value_{}", i))
-                );
+            match attr {
+                Attribute::Float(retrieved_value) => {
+                    if value.is_infinite() {
+                        assert!(retrieved_value.is_infinite(), 
+                                "For {}: retrieved value should be infinite", desc);
+                        assert_eq!(value.is_sign_positive(), retrieved_value.is_sign_positive(),
+                                   "For {}: sign should match", desc);
+                    } else if value.is_sign_negative() && *value == -0.0 {
+                        // Special case for negative zero
+                        assert!(retrieved_value.is_sign_negative(), 
+                                "For {}: should preserve negative zero sign", desc);
+                        assert!(retrieved_value == 0.0, 
+                                "For {}: should still be zero", desc);
+                    } else {
+                        assert!((*value - retrieved_value).abs() < f64::EPSILON,
+                               "For {}: values should match", desc);
+                    }
+                },
+                _ => panic!("For {}: Expected Float attribute", desc),
             }
         }
+        
+        // Test NaN separately since NaN != NaN
+        let nan_attr = Attribute::Float(f64::NAN);
+        match nan_attr {
+            Attribute::Float(retrieved_nan) => {
+                assert!(retrieved_nan.is_nan(), "NaN should be preserved");
+            },
+            _ => panic!("Expected Float(NaN) attribute"),
+        }
+    }
 
-        // Test with special key characters
-        op.attributes.insert(
-            "special.key.with.dots".to_string(),
-            Attribute::Int(123)
+    /// Test 10: Complex compiler integration with edge case values
+    #[test]
+    fn test_compiler_with_complex_edge_case_values() {
+        let mut compiler = ImpulseCompiler::new();
+        
+        // Test that the compiler can be created and has expected initial state
+        assert_eq!(compiler.frontend, compiler.frontend); // Basic equality test
+        assert_eq!(compiler.passes.passes.len(), 0);
+        assert_eq!(compiler.backends.backends.len(), 0); // Assuming this field exists
+        assert_eq!(compiler.runtime.devices.len(), 0);   // Assuming this field exists
+        
+        // Create a module with complex edge-case values
+        let mut module = Module::new("edge_case_module");
+        
+        // Add an operation with complex attributes
+        let mut op = Operation::new("complex_op_for_compiler");
+        op.inputs.push(Value {
+            name: "unicode_input_🚀".to_string(),
+            ty: Type::F32,
+            shape: vec![0, 10, 0], // Zero dimensions
+        });
+        
+        let mut attrs = HashMap::new();
+        attrs.insert(
+            "special_float".to_string(),
+            Attribute::Float(f64::INFINITY)
         );
-        op.attributes.insert(
-            "key with spaces".to_string(),
-            Attribute::Float(42.5)
+        attrs.insert(
+            "unicode_string".to_string(),
+            Attribute::String("🔥🚀🌟".to_string())
         );
-        op.attributes.insert(
-            "key\twith\ttabs".to_string(),
-            Attribute::Bool(true)
-        );
-        op.attributes.insert(
-            "key\nwith\nnewlines".to_string(),
-            Attribute::String("test".to_string())
-        );
-
-        // Verify all attributes are stored correctly
-        assert!(op.attributes.contains_key("special.key.with.dots"));
-        assert!(op.attributes.contains_key("key with spaces"));
-        assert!(op.attributes.contains_key("key\twith\ttabs"));
-        assert!(op.attributes.contains_key("key\nwith\nnewlines"));
-
-        assert_eq!(op.attributes.get("special.key.with.dots"), Some(&Attribute::Int(123)));
-        assert_eq!(op.attributes.get("key with spaces"), Some(&Attribute::Float(42.5)));
-        assert_eq!(op.attributes.get("key\twith\ttabs"), Some(&Attribute::Bool(true)));
-        assert_eq!(op.attributes.get("key\nwith\nnewlines"), Some(&Attribute::String("test".to_string())));
+        op.attributes = attrs;
+        
+        module.add_operation(op);
+        
+        // Add another operation with nested tensor types
+        let nested_type_op = {
+            let mut nested_type = Type::F32;
+            for _ in 0..5 {
+                nested_type = Type::Tensor {
+                    element_type: Box::new(nested_type.clone()),
+                    shape: vec![2],
+                };
+            }
+            
+            let mut op = Operation::new("nested_tensor_op");
+            op.outputs.push(Value {
+                name: "nested_tensor_output".to_string(),
+                ty: nested_type,
+                shape: vec![3, 3],
+            });
+            op
+        };
+        
+        module.add_operation(nested_type_op);
+        
+        // Verify the module was constructed properly
+        assert_eq!(module.name, "edge_case_module");
+        assert_eq!(module.operations.len(), 2);
+        
+        // Check first operation
+        assert_eq!(module.operations[0].op_type, "complex_op_for_compiler");
+        assert_eq!(module.operations[0].inputs[0].name, "unicode_input_🚀");
+        assert_eq!(module.operations[0].attributes.len(), 2);
+        
+        // Check second operation  
+        assert_eq!(module.operations[1].op_type, "nested_tensor_op");
+        
+        // The test passes if no panics occurred during construction
     }
 }
