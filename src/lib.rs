@@ -74,13 +74,13 @@ mod more_edge_case_tests_comprehensive;
 mod additional_edge_case_tests_newest;
 
 #[cfg(test)]
-mod additional_edge_case_tests_new;
-
-#[cfg(test)]
 mod additional_edge_case_tests_newer;
 
 #[cfg(test)]
 mod additional_edge_case_tests_extended;
+
+#[cfg(test)]
+mod additional_edge_case_tests_new;
 
 // Re-export key types at the crate level
 pub use compiler::{Compiler, CompilationResult};
