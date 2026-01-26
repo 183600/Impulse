@@ -5,6 +5,7 @@ use crate::{
     ir::{Module, Value, Type, Operation, Attribute},
     utils::{ir_utils, math_utils},
 };
+use crate::utils::calculate_tensor_size_safe;
 use std::collections::HashMap;
 
 #[cfg(test)]
@@ -77,7 +78,7 @@ mod remaining_edge_case_tests {
         assert_eq!(zero_result, 0); // Zero in dimensions results in zero size
         
         // Test the safe calculation utility function directly
-        use impulse::utils::calculate_tensor_size_safe;
+        use crate::utils::calculate_tensor_size_safe;
         let safe_result = calculate_tensor_size_safe(&[10_000, 10_000]);
         assert_eq!(safe_result, Some(10_000 * 10_000)); // 100 million elements
         
@@ -185,7 +186,7 @@ mod remaining_edge_case_tests {
 
     #[test]
     fn test_validation_utilities_with_complex_nested_structures() {
-        use impulse::utils::validation_utils;
+        use crate::utils::validation_utils;
         
         // Create a complex module with deeply nested types and structures
         
@@ -366,7 +367,7 @@ mod remaining_edge_case_tests {
     #[test]
     fn test_edge_cases_with_tensor_size_calculation() {
         // Test tensor size calculations that could potentially cause issues
-        use impulse::utils::calculate_tensor_size_safe;
+        use crate::utils::calculate_tensor_size_safe;
         
         // Test the helper function directly
         assert_eq!(calculate_tensor_size_safe(&[]), Some(1));  // Scalar has 1 element
@@ -525,7 +526,7 @@ mod remaining_edge_case_tests {
         complex_op.attributes = attrs;
         
         // Validate the complex operation
-        use impulse::utils::validation_utils;
+        use crate::utils::validation_utils;
         let result = validation_utils::validate_operation(&complex_op);
         assert!(result.is_ok(), "Complex operation should validate: {:?}", result.err());
         

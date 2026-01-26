@@ -240,7 +240,8 @@ fn test_attribute_key_edge_cases() {
     attrs.insert("".to_string(), Attribute::Int(2));  // Empty key
     attrs.insert("key_with_123_numbers".to_string(), Attribute::Int(3));
     attrs.insert("key_with_特殊字符_🔥".to_string(), Attribute::Int(4));
-    attrs.insert("a".repeat(1000), Attribute::Int(5));  // Very long key
+    let long_key = "a".repeat(1000);
+    attrs.insert(long_key.clone(), Attribute::Int(5));  // Very long key
     attrs.insert("!@#$%^&*()".to_string(), Attribute::Int(6));  // Special characters
     attrs.insert("key.with.dots".to_string(), Attribute::Int(7));
     attrs.insert("key-with-dashes".to_string(), Attribute::Int(8));
@@ -254,7 +255,7 @@ fn test_attribute_key_edge_cases() {
     assert_eq!(op.attributes.get(""), Some(&Attribute::Int(2)));
     assert_eq!(op.attributes.get("key_with_123_numbers"), Some(&Attribute::Int(3)));
     assert_eq!(op.attributes.get("key_with_特殊字符_🔥"), Some(&Attribute::Int(4)));
-    assert_eq!(op.attributes.get(&"a".repeat(1000)), Some(&Attribute::Int(5)));
+    assert_eq!(op.attributes.get(&long_key), Some(&Attribute::Int(5)));
     assert_eq!(op.attributes.get("!@#$%^&*()"), Some(&Attribute::Int(6)));
 }
 

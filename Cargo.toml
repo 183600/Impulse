@@ -46,6 +46,7 @@ cpu = []
 cuda = ["dep:rustacuda"]
 opencl = ["dep:ocl"]
 testing = []
+rstest = []
 
 [profile.dev]
 opt-level = 0

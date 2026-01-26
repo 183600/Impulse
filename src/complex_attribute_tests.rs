@@ -2,8 +2,7 @@
 //! This file contains tests covering complex attribute structures and interactions
 
 use crate::{
-    ir::{Module, Value, Type, Operation, Attribute},
-    utils::ir_utils,
+    ir::{Value, Type, Operation, Attribute},
 };
 use std::collections::HashMap;
 

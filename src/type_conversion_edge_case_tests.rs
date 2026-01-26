@@ -498,7 +498,7 @@ mod additional_edge_case_conversion_tests {
     #[test]
     fn test_type_extensions_with_complex_nested_types() {
         // Test the TypeExtensions trait with complex nested types
-        use impulse::ir::TypeExtensions;
+        use crate::ir::TypeExtensions;
         
         // Create a deeply nested type
         let mut current_type = Type::F32;

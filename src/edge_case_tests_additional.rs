@@ -6,6 +6,7 @@ use crate::{
     ir::{Module, Value, Type, Operation, Attribute},
     utils::ir_utils,
 };
+use crate::ir::TypeExtensions;
 
 #[cfg(test)]
 mod additional_edge_case_tests {
@@ -260,11 +261,12 @@ mod additional_edge_case_tests {
     #[test]
     fn test_value_name_edge_cases() {
         // Test values with various problematic names
+        let binding = "a".repeat(1000);
         let test_cases = vec![
             ("", Type::F32),  // Empty name
             (" ", Type::I32), // Single space
             ("\t\n\r", Type::F64), // Control characters
-            ("a".repeat(1000), Type::Bool), // Very long name
+            (&binding, Type::Bool), // Very long name
             ("normal_name", Type::I64), // Normal name
             ("name_with_numbers_123", Type::F32), // Name with numbers
             ("name_with_symbols_!@#$%^&*()", Type::Bool), // Name with symbols
@@ -585,7 +587,7 @@ mod additional_edge_case_tests {
     #[test]
     fn test_type_extensions_validation() {
         // Test the TypeExtensions trait implementation
-        use impulse::ir::TypeExtensions;
+        use crate::ir::TypeExtensions;
         
         // Test primitive types
         assert!(Type::F32.is_valid_type());
