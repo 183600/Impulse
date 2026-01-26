@@ -56,6 +56,9 @@ mod more_edge_cases;
 mod additional_tests;
 
 #[cfg(test)]
+mod more_comprehensive_edge_case_tests;
+
+#[cfg(test)]
 mod more_edge_case_tests;
 
 #[cfg(test)]
