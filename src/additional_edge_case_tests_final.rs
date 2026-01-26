@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod additional_edge_case_tests {
-    use crate::ir::{Module, Value, Type, Operation, Attribute};
+    use crate::ir::{Module, Value, Type, Operation, Attribute, TypeExtensions};
     use std::collections::HashMap;
 
     /// Test 1: Maximum possible tensor dimensions
@@ -140,7 +140,7 @@ mod additional_edge_case_tests {
         let test_strings = [
             "",                             // Empty string
             "a",                            // Single character
-            " ".repeat(1000),              // Long whitespace string
+            &" ".repeat(1000),              // Long whitespace string
             "\0",                          // Null character
             "🚀🌟💻🔥",                     // Emojis
             "αβγδεζηθικλμνξοπρστυφχψω",  // Greek letters
@@ -163,7 +163,7 @@ mod additional_edge_case_tests {
             assert_eq!(op.op_type, *test_str, "Operation name test failed for case {}", i);
 
             // Test module names
-            let module = Module::new(test_str);
+            let module = Module::new(*test_str);
             assert_eq!(module.name, *test_str, "Module name test failed for case {}", i);
 
             // Test attribute string values
