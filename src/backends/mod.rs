@@ -34,6 +34,11 @@ impl BackendManager {
             None => Err(anyhow::anyhow!("Unknown target: {}", target)),
         }
     }
+    
+    /// List all registered backends
+    pub fn list_backends(&self) -> Vec<&String> {
+        self.backends.keys().collect()
+    }
 }
 
 /// Trait that all backends must implement

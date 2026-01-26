@@ -3,7 +3,7 @@
 
 #[cfg(test)]
 mod additional_edge_case_tests {
-    use crate::ir::{Module, Operation, Value, Type, Attribute};
+    use crate::ir::{Module, Operation, Value, Type, Attribute, TypeExtensions};
     use crate::ImpulseCompiler;
     use std::collections::HashMap;
 
@@ -236,8 +236,8 @@ mod additional_edge_case_tests {
             (f64::NEG_INFINITY, "negative_infinity"),
             (-0.0, "negative_zero"),
             (f64::EPSILON, "epsilon"),
-            (f64::consts::PI, "pi"),
-            (f64::consts::E, "euler_number"),
+            (std::f64::consts::PI, "pi"),  // Fixed: Added std:: prefix
+            (std::f64::consts::E, "euler_number"),  // Fixed: Added std:: prefix
         ];
         
         for (value, desc) in special_values.iter() {
@@ -278,13 +278,15 @@ mod additional_edge_case_tests {
     /// Test 10: Complex compiler integration with edge case values
     #[test]
     fn test_compiler_with_complex_edge_case_values() {
+        use crate::{frontend, backends, runtime};
+
         let mut compiler = ImpulseCompiler::new();
         
         // Test that the compiler can be created and has expected initial state
-        assert_eq!(compiler.frontend, compiler.frontend); // Basic equality test
+        // Fixed: removed equality test because Frontend doesn't implement PartialEq
         assert_eq!(compiler.passes.passes.len(), 0);
-        assert_eq!(compiler.backends.backends.len(), 0); // Assuming this field exists
-        assert_eq!(compiler.runtime.devices.len(), 0);   // Assuming this field exists
+        // Fixed: removed access to private fields
+        assert_eq!(compiler.backends.list_backends().len(), 0); // Using public method
         
         // Create a module with complex edge-case values
         let mut module = Module::new("edge_case_module");

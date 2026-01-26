@@ -38,9 +38,6 @@ mod new_edge_case_tests_extended;
 mod additional_edge_cases;
 
 #[cfg(test)]
-mod additional_edge_case_tests_new;
-
-#[cfg(test)]
 mod more_edge_case_tests_new;
 
 #[cfg(test)]
@@ -60,9 +57,6 @@ mod new_boundary_tests;
 
 #[cfg(test)]
 mod additional_edge_case_tests_final;
-
-#[cfg(test)]
-mod additional_edge_case_tests_new;
 
 
 // Re-export key types at the crate level

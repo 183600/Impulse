@@ -4,6 +4,7 @@ use crate::ir::Module;
 use anyhow::Result;
 
 /// Frontend for importing models in various formats
+#[derive(Debug, PartialEq)]
 pub struct Frontend {}
 
 impl Frontend {
