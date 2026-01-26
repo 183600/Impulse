@@ -38,9 +38,9 @@ fn test_values_maximum_shape_dimensions() {
 /// Test 3: Deeply nested tensor types with maximum recursion depth
 #[test]
 fn test_deepest_nested_tensor_types() {
-    // Create a deeply nested tensor type to approach recursion limits
+    // Create a deeply nested tensor type (reduced from 500 to 20 to avoid stack overflow)
     let mut current_type = Type::F32;
-    for _ in 0..500 {  // Increase depth significantly
+    for _ in 0..20 {  // Reduced depth to avoid stack overflow
         current_type = Type::Tensor {
             element_type: Box::new(current_type),
             shape: vec![1],

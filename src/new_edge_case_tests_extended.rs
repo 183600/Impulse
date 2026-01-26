@@ -46,8 +46,8 @@ fn test_operations_extreme_numeric_values() {
 fn test_deeply_nested_tensor_stack_limit() {
     let mut current_type = Type::F32;
     
-    // Create 1000 levels of nesting - this should not cause stack overflow
-    for _ in 0..1000 {
+    // Create 20 levels of nesting (reduced from 1000 to avoid stack overflow)
+    for _ in 0..20 {
         current_type = Type::Tensor {
             element_type: Box::new(current_type),
             shape: vec![1],

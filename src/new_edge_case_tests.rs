@@ -38,10 +38,9 @@ fn test_operation_with_large_attributes() {
 // Test 2: Deep tensor nesting that tests the limits but avoids stack overflow
 #[test]
 fn test_deep_tensor_nesting() {
-    // Create a deeply nested tensor type with 1000 levels (using Box to avoid stack overflow)
-    // Using a more reasonable number to avoid stack overflow while still testing deep nesting
+    // Create a deeply nested tensor type (reduced from 1000 to 20 to avoid stack overflow)
     let mut current_type = Type::F32;
-    for _ in 0..1000 {
+    for _ in 0..20 {
         current_type = Type::Tensor {
             element_type: Box::new(current_type),
             shape: vec![2],

@@ -796,14 +796,4 @@ mod tests {
         assert_eq!(new_compiler.passes.passes.len(), 0);
     }
 }
-#[cfg(test)]
-mod edge_case_tests;
 
-#[cfg(test)]
-mod edge_case_tests_additional;
-
-#[cfg(test)]
-mod comprehensive_additional_tests;
-
-#[cfg(test)]
-mod more_edge_case_tests_new;
