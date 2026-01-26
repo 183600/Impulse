@@ -29,9 +29,6 @@ mod attribute_edge_case_tests;
 mod additional_boundary_tests;
 
 #[cfg(test)]
-mod additional_edge_case_tests_new;
-
-#[cfg(test)]
 mod additional_comprehensive_tests;
 
 #[cfg(test)]
@@ -73,9 +70,12 @@ mod more_edge_case_tests_comprehensive;
 #[cfg(test)]
 mod additional_edge_case_tests_newest;
 
+#[cfg(test)]
+mod additional_edge_case_tests_new;
+
 // Re-export key types at the crate level
 pub use compiler::{Compiler, CompilationResult};
-pub use ir::{Module, Operation, Value, Type};
+pub use ir::{Module, Value, Type};
 pub use runtime::{Device, ExecutionContext};
 
 /// Main entry point for the Impulse compiler
