@@ -445,19 +445,6 @@ mod validation_and_module_edge_case_tests {
         });
         
         // Add an operation with long names
-        let mut long_op = Operation::new(        let mut long_op = Operation::new(let mut long_op = Operation::new(let mut long_op = Operation::new("op_".to_string() + &"e".repeat(300_000));("op_".to_string() + let mut long_op = Operation::new(let mut long_op = Operation::new("op_".to_string() + &"e".repeat(300_000));"e".repeat(300_000)));
-        long_op.inputs("op_".to_string() + let mut long_op = Operation::new("op_".to_string() + &"e".repeat(300_000));"e".repeat(300_000)));("op_".to_string() +         let mut long_op = Operation::new(let mut long_op = Operation::new("op_".to_string() + &"e".repeat(300_000));("op_".to_string() + let mut long_op = Operation::new("op_".to_string() + &"e".repeat(300_000));"e".repeat(300_000)));"e".repeat(300_000)));
-        long_op.inputs.push(Value {
-            name: "long_input_".to_string() + &"f".repeat(200_000),
-            ty: Type::F32,
-            shape: vec![5, 5],
-        });
-        long_op.outputs.push(Value {
-            name: "long_output_".to_string() + &"g".repeat(200_000),
-            ty: Type::F32,
-            shape: vec![5, 5],
-        });
-        
         let mut long_op = Operation::new(&("op_".to_string() + &"e".repeat(300_000)));
         long_op.inputs.push(Value {
             name: "long_input_".to_string() + &"f".repeat(200_000),
