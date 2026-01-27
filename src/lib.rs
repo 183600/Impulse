@@ -132,6 +132,9 @@ pub use utils::ir_utils;
 #[cfg(test)]
 mod additional_edge_case_boundary_tests;
 
+#[cfg(test)]
+mod new_edge_case_tests;
+
 /// Main entry point for the Impulse compiler
 pub struct ImpulseCompiler {
     /// Frontend for importing models
