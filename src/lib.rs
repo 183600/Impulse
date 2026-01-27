@@ -147,6 +147,12 @@ mod focused_edge_case_tests;
 #[cfg(test)]
 mod additional_edge_case_tests_new_new_new;
 
+#[cfg(test)]
+mod additional_ir_edge_case_tests;
+
+#[cfg(test)]
+mod rstest_additional_edge_cases;
+
 /// Main entry point for the Impulse compiler
 pub struct ImpulseCompiler {
     /// Frontend for importing models
