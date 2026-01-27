@@ -1,18 +1,18 @@
-```rust
 //! Additional edge case tests for the Impulse compiler
 //! Focuses on numerical overflows, memory limits, and boundary conditions
 
-use crate::ir::{Module, Value, Type, Operation, Attribute};
+use crate::ir::{Module, Value, Type, Operation, Attribute, TypeExtensions};
 use rstest::rstest;
 
 // Test 1: Overflow detection in shape product calculations using checked arithmetic
 #[test]
 fn test_shape_product_overflow_detection() {
     // Test the num_elements method which uses checked arithmetic
+    // Use values that will definitely cause overflow on 64-bit systems
     let large_shape = Value {
         name: "large_tensor".to_string(),
         ty: Type::F32,
-        shape: vec![1_000_000_000, 1_000_000_000], // These numbers when multiplied would overflow
+        shape: vec![usize::MAX, 2], // These numbers when multiplied would definitely overflow
     };
     
     // Direct multiplication would overflow, but our method should handle it gracefully
@@ -337,21 +337,30 @@ fn test_special_float_behavior_in_attributes() {
         }
     }
     
-    // Test that NaN comparisons work as expected (NaN != NaN)
+    // Test that regular float values compare correctly
+    let float1 = Attribute::Float(3.14);
+    let float2 = Attribute::Float(3.14);
+    assert_eq!(float1, float2);
+    
+    // Test that infinity values compare correctly
+    let inf1 = Attribute::Float(f64::INFINITY);
+    let inf2 = Attribute::Float(f64::INFINITY);
+    assert_eq!(inf1, inf2);
+    
+    let neg_inf1 = Attribute::Float(f64::NEG_INFINITY);
+    let neg_inf2 = Attribute::Float(f64::NEG_INFINITY);
+    assert_eq!(neg_inf1, neg_inf2);
+    
+    // Note: NaN != NaN according to IEEE 754 standard
+    // So Attribute::Float(NaN) != Attribute::Float(NaN) which is expected behavior
     let nan1 = Attribute::Float(f64::NAN);
     let nan2 = Attribute::Float(f64::NAN);
-    // Note: In IEEE 754, NaN != NaN, but for our purposes in Attribute comparison,
-    // this may be implemented differently depending on the derive(PartialEq)
-    assert_eq!(nan1, nan2); // In Rust, NaN == NaN returns false, but PartialEq implementation
-                            // of f64 makes NaN != NaN always, so this assertion depends
-                            // on how the comparison is implemented.
+    assert_ne!(nan1, nan2);  // This is expected behavior for NaN
     
-    // Actually, in Rust's PartialEq implementation for f64, NaN == NaN is false
-    // So if Attribute::Float(NaN) PartialEq calls f64's PartialEq, they will be not equal
-    // So the correct test would be:
+    // But a value should equal itself when compared to its clone (though this still follows f64 rules)
     let nan_attr = Attribute::Float(f64::NAN);
     let cloned_nan = nan_attr.clone();
-    assert_eq!(nan_attr, cloned_nan); // Cloning should preserve equality with itself
+    assert_ne!(nan_attr, cloned_nan);  // Even cloned NaNs are not equal
 }
 
 // Test 10: Boundary values for all primitive types in tensors
@@ -397,4 +406,3 @@ fn test_all_primitive_types_in_tensor_context(#[case] base_type: Type) {
         }
     }
 }
-```
