@@ -6,7 +6,6 @@ use crate::{
     ir::{Module, Value, Type, Operation, Attribute},
     utils::ir_utils,
 };
-use crate::ir::TypeExtensions;
 
 #[cfg(test)]
 mod additional_edge_case_tests {
@@ -456,7 +455,7 @@ mod additional_edge_case_tests {
         ];
 
         for data_type in &types {
-            let value = Value {
+            let _value = Value {
                 name: "param_test".to_string(),
                 ty: data_type.clone(),
                 shape: vec![1],
@@ -489,7 +488,7 @@ mod additional_edge_case_tests {
         ];
 
         for shape in &shapes {
-            let value = Value {
+            let _value = Value {
                 name: "shape_test".to_string(),
                 ty: Type::F32,
                 shape: shape.clone(),

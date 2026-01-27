@@ -382,7 +382,7 @@ mod comprehensive_tests {
     fn test_target_string_variations(#[case] target: &str, #[case] _may_be_valid: bool) {
         // This tests how the system handles various target strings
         // The actual validation would happen in the compiler implementation
-        assert!(target.len() >= 0);  // Basic sanity check
+        assert!(true);  // Basic sanity check - removed redundant assertion about usize >= 0
         
         // Test we can work with the string value safely
         let upper_case = target.to_uppercase();

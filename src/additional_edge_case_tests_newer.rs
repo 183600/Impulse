@@ -433,8 +433,6 @@ fn test_comprehensive_boundary_validation() {
     for op in &module.operations {
         // Verify each operation is structurally valid
         assert!(op.op_type.len() > 0);
-        assert!(op.inputs.len() >= 0);  // This is always true for usize, but kept for completeness
-        assert!(op.outputs.len() >= 0);  // This is always true for usize, but kept for completeness
-        assert!(op.attributes.len() >= 0);  // This is always true for usize, but kept for completeness
+        assert!(true);  // Basic sanity check - removed redundant assertion about usize >= 0
     }
 }

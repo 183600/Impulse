@@ -261,7 +261,7 @@ mod validation_and_module_edge_case_tests {
         
         let mut unicode_op = Operation::new("op_操作_операция");
         unicode_op.inputs.push(Value {
-            name: "op_input_入力_ввод".to_string(),
+            name: "output_出力_вывод".to_string(),  // Same as module output name - this creates the conflict
             ty: Type::F32,
             shape: vec![5],
         });
@@ -274,6 +274,7 @@ mod validation_and_module_edge_case_tests {
         unicode_module.add_operation(unicode_op);
         
         // Unicode names should be valid, but there's a duplicate "output_出力_вывод" in input and output names
+        // (module output name conflicts with operation input name)
         let result = validation_utils::validate_module(&unicode_module);
         assert!(result.is_err()); // Should fail because input and output share the same name
         

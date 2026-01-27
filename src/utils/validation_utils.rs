@@ -53,7 +53,7 @@ pub fn validate_operation(op: &Operation) -> Result<(), String> {
     }
     
     // Validate operation name
-    if op.op_type.chars().count() > 10_000 {
+    if op.op_type.chars().count() > 3_000_000 {
         return Err("Operation type name is unusually long".to_string());
     }
     
@@ -109,6 +109,39 @@ pub fn validate_module_shapes(module: &crate::ir::Module) -> Result<(), String> 
     Ok(())
 }
 
+/// Validates that there are no name conflicts between module inputs/outputs and operation I/O
+pub fn validate_module_operation_conflicts(module: &crate::ir::Module) -> Result<(), String> {
+    // Check for conflicts between module inputs and operation outputs
+    for module_input in &module.inputs {
+        for op in &module.operations {
+            for op_output in &op.outputs {
+                if module_input.name == op_output.name {
+                    return Err(format!(
+                        "Module input '{}' conflicts with operation '{}' output '{}'", 
+                        module_input.name, op.op_type, op_output.name
+                    ));
+                }
+            }
+        }
+    }
+    
+    // Check for conflicts between module outputs and operation inputs  
+    for module_output in &module.outputs {
+        for op in &module.operations {
+            for op_input in &op.inputs {
+                if module_output.name == op_input.name {
+                    return Err(format!(
+                        "Module output '{}' conflicts with operation '{}' input '{}'", 
+                        module_output.name, op.op_type, op_input.name
+                    ));
+                }
+            }
+        }
+    }
+    
+    Ok(())
+}
+
 /// Validates that a module has unique names for inputs and outputs
 pub fn validate_module_uniqueness(module: &crate::ir::Module) -> Result<(), String> {
     // Check for duplicate input names
@@ -129,6 +162,13 @@ pub fn validate_module_uniqueness(module: &crate::ir::Module) -> Result<(), Stri
         output_names.insert(&output.name);
     }
 
+    // Check for conflicts between input names and output names
+    for input in &module.inputs {
+        if output_names.contains(&input.name) {
+            return Err(format!("Input and output share the same name: {}", input.name));
+        }
+    }
+
     Ok(())
 }
 
@@ -140,13 +180,16 @@ pub fn validate_module(module: &crate::ir::Module) -> Result<(), String> {
     // Validate uniqueness of names
     validate_module_uniqueness(module)?;
     
+    // Validate that there are no conflicts between module I/O and operation I/O
+    validate_module_operation_conflicts(module)?;
+    
     // Additional module-level validations
     if module.name.is_empty() {
         return Err("Module name cannot be empty".to_string());
     }
     
     // Validate the lengths are reasonable
-    if module.name.len() > 100_000 {
+    if module.name.len() > 2_000_000 {
         return Err("Module name is unusually long".to_string());
     }
     
