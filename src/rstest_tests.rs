@@ -2,11 +2,13 @@
 //! This file contains additional tests focusing on edge cases and boundary conditions
 
 use rstest::*;
-use impulse::{
+use crate::{
     ir::{Module, Value, Type, Operation, Attribute},
     compiler::Compiler,
-    utils::ir_utils,
 };
+
+// Importing the ir_utils module - since it's not in the main lib.rs exports yet, we import directly
+use crate::utils::ir_utils;
 
 // Test for tensor edge cases
 #[rstest]

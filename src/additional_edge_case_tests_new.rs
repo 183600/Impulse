@@ -2,7 +2,7 @@
 //! This file contains extra tests focusing on boundary conditions and edge cases
 
 use rstest::*;
-use impulse::ir::{Module, Value, Type, Operation, Attribute};
+use crate::ir::{Module, Value, Type, Operation, Attribute};
 
 // Test for extreme numerical values in attributes
 #[rstest]

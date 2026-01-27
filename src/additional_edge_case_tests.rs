@@ -3,7 +3,6 @@
 
 #[cfg(test)]
 mod additional_edge_case_tests {
-    use super::*;
     use crate::ir::{Module, Value, Type, Operation, Attribute};
     use rstest::rstest;
 

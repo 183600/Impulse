@@ -2,31 +2,36 @@
 //!
 //! This is the main binary for the Impulse AI compiler tool
 
+use clap::Parser;
 use impulse::ImpulseCompiler;
-use std::env;
+
+#[derive(Parser)]
+#[command(name = "impulse-compiler")]
+#[command(about = "An AI heterogeneous computing compiler", long_about = None)]
+struct Args {
+    /// Path to the input model file
+    #[arg(value_name = "INPUT_MODEL")]
+    input_model: String,
+
+    /// Target backend (e.g., cpu, cuda)
+    #[arg(short, long, default_value_t = String::from("cpu"))]
+    target: String,
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
-    let args: Vec<String> = env::args().collect();
-    
-    if args.len() < 2 {
-        eprintln!("Usage: {} <input_model> [target]", args[0]);
-        std::process::exit(1);
-    }
+    let args = Args::parse();
 
-    let input_path = &args[1];
-    let target = args.get(2).map(|s| s.as_str()).unwrap_or("cpu");
-
-    println!("Loading model from: {}", input_path);
-    println!("Target: {}", target);
+    println!("Loading model from: {}", args.input_model);
+    println!("Target: {}", args.target);
 
     // Load the model file
-    let model_bytes = std::fs::read(input_path)?;
+    let model_bytes = std::fs::read(&args.input_model)?;
     
     // Create and use the compiler
     let mut compiler = ImpulseCompiler::new();
-    let result = compiler.compile(&model_bytes, target)?;
+    let result = compiler.compile(&model_bytes, &args.target)?;
 
     println!("Compilation completed successfully!");
     println!("Compiled output size: {} bytes", result.len());

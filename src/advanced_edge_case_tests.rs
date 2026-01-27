@@ -1,7 +1,7 @@
 //! Advanced edge case tests for the Impulse compiler
 //! Testing boundary conditions and extreme scenarios
 
-use impulse::ir::{Module, Operation, Value, Type, Attribute};
+use crate::ir::{Module, Operation, Value, Type, Attribute};
 use std::collections::HashMap;
 
 /// Test 1: Operations with maximum number of attributes

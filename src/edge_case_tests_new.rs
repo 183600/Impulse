@@ -3,7 +3,7 @@
 
 #[cfg(test)]
 mod edge_case_tests_new {
-    use crate::ir::{Value, Type, Operation, Attribute, Module, TypeExtensions};
+    use crate::ir::{Value, Type, Operation, Attribute, Module};
     
     /// Test 1: Testing operations with empty string names and special unicode names
     #[test]

@@ -69,15 +69,12 @@ impl CpuBackend {
 }
 
 impl Backend for CpuBackend {
-    fn compile(&self, module: &Module) -> Result<Vec<u8>> {
+    fn compile(&self, _module: &Module) -> Result<Vec<u8>> {
         // TODO: Implement actual CPU code generation
         println!("Compiling for CPU target: {}", self.target_triple);
         
-        // For now, just serialize the module as a placeholder
-        let serialized = bincode::serialize(module)
-            .map_err(|e| anyhow::anyhow!("Serialization error: {}", e))?;
-            
-        Ok(serialized)
+        // For now, just return dummy output
+        Ok(vec![0u8; 100]) // Placeholder output
     }
 
     fn target_triple(&self) -> &str {
@@ -105,15 +102,12 @@ impl CudaBackend {
 }
 
 impl Backend for CudaBackend {
-    fn compile(&self, module: &Module) -> Result<Vec<u8>> {
+    fn compile(&self, _module: &Module) -> Result<Vec<u8>> {
         // TODO: Implement actual CUDA code generation
         println!("Compiling for CUDA target: {}", self.target_triple);
         
-        // For now, just serialize the module as a placeholder
-        let serialized = bincode::serialize(module)
-            .map_err(|e| anyhow::anyhow!("Serialization error: {}", e))?;
-            
-        Ok(serialized)
+        // For now, just return dummy output
+        Ok(vec![0u8; 100]) // Placeholder output
     }
 
     fn target_triple(&self) -> &str {
@@ -124,6 +118,3 @@ impl Backend for CudaBackend {
         &self.data_layout
     }
 }
-
-// We need to add bincode to our dependencies
-// This would typically be handled by updating Cargo.toml, but we'll make a note here
