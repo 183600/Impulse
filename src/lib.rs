@@ -110,6 +110,9 @@ mod more_boundary_tests;
 #[cfg(test)]
 mod concurrent_edge_case_tests;
 
+#[cfg(test)]
+mod new_important_edge_cases;
+
 // Re-export key types at the crate level
 pub use compiler::{Compiler, CompilationResult};
 pub use ir::{Module, Value, Type};

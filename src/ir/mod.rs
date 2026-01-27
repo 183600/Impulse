@@ -14,7 +14,7 @@ pub struct Module {
 }
 
 /// An operation in the computation graph
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Operation {
     pub op_type: String,
     pub inputs: Vec<Value>,
