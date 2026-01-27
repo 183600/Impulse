@@ -100,6 +100,9 @@ mod new_advanced_edge_case_tests;
 #[cfg(test)]
 mod additional_edge_case_tests;
 
+#[cfg(test)]
+mod edge_case_tests_new;
+
 // Re-export key types at the crate level
 pub use compiler::{Compiler, CompilationResult};
 pub use ir::{Module, Value, Type};
