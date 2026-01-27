@@ -156,6 +156,9 @@ mod new_edge_case_tests_comprehensive;
 #[cfg(test)]
 mod advanced_edge_case_tests_comprehensive;
 
+#[cfg(test)]
+mod edge_case_overflows_and_limits;
+
 /// Main entry point for the Impulse compiler
 pub struct ImpulseCompiler {
     /// Frontend for importing models
