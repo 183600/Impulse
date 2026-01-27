@@ -128,6 +128,10 @@ pub use ir::{Module, Value, Type};
 pub use runtime::{Device, ExecutionContext};
 pub use utils::ir_utils;
 
+// Additional test modules
+#[cfg(test)]
+mod additional_edge_case_boundary_tests;
+
 /// Main entry point for the Impulse compiler
 pub struct ImpulseCompiler {
     /// Frontend for importing models
