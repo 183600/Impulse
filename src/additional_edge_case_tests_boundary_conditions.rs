@@ -178,6 +178,11 @@ mod boundary_condition_tests {
             _ => panic!("Expected Float attribute"),
         }
         
+        match neg_float_attr {
+            Attribute::Float(val) => assert!(val.is_infinite() && val < 0.0),
+            _ => panic!("Expected Float attribute"),
+        }
+        
         // Note: NaN comparisons behave differently, so we just check it's a Float
         match nan_float_attr {
             Attribute::Float(val) => assert!(val.is_nan()),

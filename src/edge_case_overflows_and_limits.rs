@@ -130,7 +130,6 @@ fn test_operations_with_large_numbers_of_inputs() {
 // Test 5: String length limits and special character handling
 #[test]
 fn test_extremely_long_strings_in_names() {
-    const MAX_REASONABLE_LENGTH: usize = 1_000_000; // 1 million chars
     
     // Test extremely long operation name
     let long_name = "a".repeat(100_000);

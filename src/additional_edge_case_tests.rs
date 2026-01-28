@@ -4,7 +4,7 @@
 #[cfg(test)]
 mod tests {
     use crate::ir::{Value, Type, Operation, Module, Attribute};
-    use std::collections::HashMap;
+    
     use rstest::rstest;
 
     #[test]

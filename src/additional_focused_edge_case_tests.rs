@@ -46,15 +46,15 @@ fn test_extreme_integer_attribute_values() {
     for (name, attr) in &extreme_attrs {
         match attr {
             Attribute::Int(value) => {
-                if name == "max_i64" {
+                if *name == "max_i64" {
                     assert_eq!(*value, i64::MAX);
-                } else if name == "min_i64" {
+                } else if *name == "min_i64" {
                     assert_eq!(*value, i64::MIN);
-                } else if name == "max_usize_as_i64" {
+                } else if *name == "max_usize_as_i64" {
                     assert_eq!(*value, usize::MAX as i64);
-                } else if name == "negative_max_usize_as_i64" {
+                } else if *name == "negative_max_usize_as_i64" {
                     assert_eq!(*value, -(usize::MAX as i64));
-                } else if name == "power_of_two_large" {
+                } else if *name == "power_of_two_large" {
                     assert_eq!(*value, 2i64.pow(60));
                 } else {
                     panic!("Unknown attribute: {}", name);
@@ -83,30 +83,30 @@ fn test_boolean_attribute_edge_cases() {
     for (name, attr) in &bool_attrs {
         match attr {
             Attribute::Bool(b) => {
-                if name == "true" {
+                if *name == "true" {
                     assert_eq!(*b, true);
-                } else if name == "false" {
+                } else if *name == "false" {
                     assert_eq!(*b, false);
                 } else {
                     panic!("Unexpected single boolean for {}", name);
                 }
             },
             Attribute::Array(arr) => {
-                if name == "array_single_true" {
+                if *name == "array_single_true" {
                     assert_eq!(arr.len(), 1);
                     if let Attribute::Bool(val) = arr[0] {
                         assert_eq!(val, true);
                     } else {
                         panic!("Expected boolean in array");
                     }
-                } else if name == "array_single_false" {
+                } else if *name == "array_single_false" {
                     assert_eq!(arr.len(), 1);
                     if let Attribute::Bool(val) = arr[0] {
                         assert_eq!(val, false);
                     } else {
                         panic!("Expected boolean in array");
                     }
-                } else if name == "mixed_bool_array" {
+                } else if *name == "mixed_bool_array" {
                     assert_eq!(arr.len(), 3);
                     if let Attribute::Bool(val) = arr[0] { assert_eq!(val, true); } else { panic!("Expected true"); }
                     if let Attribute::Bool(val) = arr[1] { assert_eq!(val, false); } else { panic!("Expected false"); }
