@@ -151,6 +151,9 @@ mod additional_ir_edge_case_tests;
 mod rstest_additional_edge_cases;
 
 #[cfg(test)]
+mod additional_edge_case_tests_new_new_new_new;
+
+#[cfg(test)]
 mod new_essential_edge_case_tests;
 
 #[cfg(test)]
