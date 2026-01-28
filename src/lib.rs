@@ -180,8 +180,9 @@ mod compiler_edge_case_tests;
 #[cfg(test)]
 mod more_edge_cases;
 
-#[cfg(test)]
-mod additional_edge_case_tests;
+// NOTE: This is a duplicate of the module declared earlier - removed to fix E0428
+// #[cfg(test)]
+// mod additional_edge_case_tests;
 
 /// Main entry point for the Impulse compiler
 pub struct ImpulseCompiler {

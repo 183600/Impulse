@@ -97,7 +97,7 @@ mod additional_comprehensive_edge_case_tests {
         let many_small_dims = vec![2; 30]; // 2^30 = ~1 billion
         let result2 = calculate_tensor_size_safe(&many_small_dims);
         assert!(result2.is_some());
-        assert_eq!(result2.unwrap(), 1u64 << 30);
+        assert_eq!(result2.unwrap(), (1u64 << 30) as usize);
     }
 
     #[test]
