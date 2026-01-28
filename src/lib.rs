@@ -45,9 +45,6 @@ mod enhanced_edge_case_tests;
 mod new_boundary_tests;
 
 #[cfg(test)]
-mod more_edge_cases;
-
-#[cfg(test)]
 mod additional_tests;
 
 #[cfg(test)]
@@ -179,6 +176,9 @@ mod boundary_edge_case_tests;
 
 #[cfg(test)]
 mod compiler_edge_case_tests;
+
+#[cfg(test)]
+mod more_edge_cases;
 
 /// Main entry point for the Impulse compiler
 pub struct ImpulseCompiler {
