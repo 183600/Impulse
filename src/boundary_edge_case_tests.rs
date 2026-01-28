@@ -1,10 +1,9 @@
-//! Additional edge case tests for the Impulse compiler
-//! Covers boundary conditions and error scenarios using standard library macros
+//! Comprehensive boundary condition tests for the Impulse compiler
+//! Covers edge cases and boundary conditions using standard library macros and rstest
 
 #[cfg(test)]
 mod tests {
-    use crate::ir::{Value, Type, Operation, Module, Attribute};
-    use std::collections::HashMap;
+    use crate::ir::{Value, Type, Operation, Module, Attribute, TypeExtensions};
     use rstest::rstest;
 
     #[test]
@@ -212,5 +211,80 @@ mod tests {
             Some(result) => assert_eq!(result, expected),
             None => panic!("num_elements returned None for valid shape"),
         }
+    }
+
+    #[test]
+    fn test_type_validation_basic_types() {
+        // Test that basic types are valid
+        assert!(Type::F32.is_valid_type());
+        assert!(Type::F64.is_valid_type());
+        assert!(Type::I32.is_valid_type());
+        assert!(Type::I64.is_valid_type());
+        assert!(Type::Bool.is_valid_type());
+    }
+
+    #[test]
+    fn test_type_validation_tensor_types() {
+        // Test that tensor types with valid element types are valid
+        let tensor_type = Type::Tensor {
+            element_type: Box::new(Type::F32),
+            shape: vec![10, 20],
+        };
+        assert!(tensor_type.is_valid_type());
+        
+        // Test nested tensor types
+        let nested_tensor = Type::Tensor {
+            element_type: Box::new(Type::Tensor {
+                element_type: Box::new(Type::I32),
+                shape: vec![5, 5],
+            }),
+            shape: vec![2, 2],
+        };
+        assert!(nested_tensor.is_valid_type());
+    }
+
+    #[test]
+    fn test_extremely_deeply_nested_tensors() {
+        // Test creating a deeply nested tensor type to test recursion limits
+        let mut current_type = Type::F32;
+        for _ in 0..50 {
+            current_type = Type::Tensor {
+                element_type: Box::new(current_type),
+                shape: vec![2],
+            };
+        }
+        
+        // The deeply nested type should still be valid
+        assert!(current_type.is_valid_type());
+        
+        // It should be a tensor
+        match &current_type {
+            Type::Tensor { element_type: _, shape } => {
+                assert_eq!(shape, &vec![2]);
+            },
+            _ => panic!("Expected tensor type at the top level"),
+        }
+    }
+
+    #[test]
+    fn test_empty_attribute_array() {
+        // Test empty array attribute
+        let empty_array = Attribute::Array(vec![]);
+        match empty_array {
+            Attribute::Array(arr) => assert_eq!(arr.len(), 0),
+            _ => panic!("Expected empty array attribute"),
+        }
+    }
+
+    #[test]
+    fn test_operation_with_extreme_name_length() {
+        // Test operation with extremely long name
+        let long_name = "op_".repeat(1000) + "end"; // Very long string
+        let op = Operation::new(&long_name);
+        
+        assert_eq!(op.op_type.len(), long_name.len());
+        assert_eq!(op.op_type, long_name);
+        assert!(op.inputs.is_empty());
+        assert!(op.outputs.is_empty());
     }
 }
