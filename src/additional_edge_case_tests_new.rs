@@ -2,6 +2,7 @@
 //! Focuses on new edge cases not covered in existing tests
 
 use crate::ir::{Module, Operation, Value, Type, Attribute};
+use crate::ir::TypeExtensions;
 use rstest::rstest;
 
 // Test 1: Arithmetic overflow in shape calculations using checked arithmetic
@@ -255,7 +256,7 @@ fn test_string_validation_and_handling() {
         "with_emojis_🚀🔥🎉",
         "with_control_\n\t\r",
         "with_unicode_escape_\u{26A1}",  // Lightning emoji
-        "long_string".repeat(1000),  // Long concatenated string
+        &"long_string".repeat(1000),  // Long concatenated string
     ];
     
     for (i, test_string) in valid_strings.iter().enumerate() {
