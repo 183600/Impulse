@@ -97,6 +97,9 @@ mod complex_attribute_tests;
 #[cfg(test)]
 mod validation_and_module_tests;
 
+#[cfg(test)]
+mod focused_boundary_tests;
+
 // Re-export key types at the crate level
 pub use compiler::{Compiler, CompilationResult};
 pub use ir::{Module, Value, Type};
