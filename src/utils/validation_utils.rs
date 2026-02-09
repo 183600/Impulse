@@ -53,7 +53,7 @@ pub fn validate_operation(op: &Operation) -> Result<(), String> {
     }
     
     // Validate operation name
-    if op.op_type.chars().count() > 10_000 {
+    if op.op_type.chars().count() > 1_000_000 {
         return Err("Operation type name is unusually long".to_string());
     }
     
@@ -128,6 +128,48 @@ pub fn validate_module_uniqueness(module: &crate::ir::Module) -> Result<(), Stri
         }
         output_names.insert(&output.name);
     }
+    
+    // Check for conflict between input names and output names at module level
+    for input in &module.inputs {
+        for output in &module.outputs {
+            if input.name == output.name {
+                return Err(format!("Module input and output share the same name: {}", input.name));
+            }
+        }
+    }
+    
+    // Check for conflicts between module inputs/outputs and operation inputs/outputs
+    for op in &module.operations {
+        // Check operation inputs against module inputs
+        for op_input in &op.inputs {
+            for module_input in &module.inputs {
+                if op_input.name == module_input.name {
+                    return Err(format!("Operation input '{}' conflicts with module input", op_input.name));
+                }
+            }
+            // Check operation inputs against module outputs
+            for module_output in &module.outputs {
+                if op_input.name == module_output.name {
+                    return Err(format!("Operation input '{}' conflicts with module output", op_input.name));
+                }
+            }
+        }
+        
+        // Check operation outputs against module inputs
+        for op_output in &op.outputs {
+            for module_input in &module.inputs {
+                if op_output.name == module_input.name {
+                    return Err(format!("Operation output '{}' conflicts with module input", op_output.name));
+                }
+            }
+            // Check operation outputs against module outputs
+            for module_output in &module.outputs {
+                if op_output.name == module_output.name {
+                    return Err(format!("Operation output '{}' conflicts with module output", op_output.name));
+                }
+            }
+        }
+    }
 
     Ok(())
 }
@@ -146,7 +188,7 @@ pub fn validate_module(module: &crate::ir::Module) -> Result<(), String> {
     }
     
     // Validate the lengths are reasonable
-    if module.name.len() > 100_000 {
+    if module.name.len() > 10_000_000 {
         return Err("Module name is unusually long".to_string());
     }
     

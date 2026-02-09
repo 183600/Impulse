@@ -266,7 +266,7 @@ mod validation_and_module_edge_case_tests {
             shape: vec![5],
         });
         unicode_op.outputs.push(Value {
-            name: "op_output_出力_вывод".to_string(),
+            name: "output_出力_вывод".to_string(),
             ty: Type::F32,
             shape: vec![5],
         });
@@ -315,7 +315,7 @@ mod validation_and_module_edge_case_tests {
             
             // Connect to previous output
             op.inputs.push(Value {
-                name: prev_output_name,
+                name: if i == 0 { "op_input_from_global".to_string() } else { prev_output_name },
                 ty: Type::F32,
                 shape: if i == 0 { vec![1, 3, 224, 224] } else { vec![1, 64] }, // Adjust shape as needed
             });

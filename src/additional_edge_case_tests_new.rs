@@ -287,7 +287,7 @@ mod additional_edge_case_tests {
         assert_eq!(i32_count, 200);
         
         // Verify shapes are correct
-        for (i, v) in values.iter().enumerate() {
+        for (_i, v) in values.iter().enumerate() {
             assert_eq!(v.shape.len(), 2);
             assert!(v.shape[0] >= 1 && v.shape[0] <= 10);
             assert!(v.shape[1] >= 1 && v.shape[1] <= 10);
@@ -333,7 +333,7 @@ mod rstest_edge_cases {
     fn test_basic_attribute_properties(#[case] attr: Attribute) {
         // This test ensures that common attribute values can be created and handled
         match attr {
-            Attribute::Int(val) => {
+            Attribute::Int(_val) => {
                 // Just verify it's an int attribute - no specific checks needed
                 assert!(true);
             },

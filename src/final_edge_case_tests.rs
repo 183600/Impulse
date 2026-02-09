@@ -5,7 +5,6 @@ use crate::{
     ir::{Module, Value, Type, Operation, Attribute},
     utils::{ir_utils, math_utils},
 };
-use crate::utils::calculate_tensor_size_safe;
 use std::collections::HashMap;
 
 #[cfg(test)]
@@ -48,7 +47,7 @@ mod remaining_edge_case_tests {
         // If it overflows, num_elements returns None, which is also valid behavior
         
         // Test with tensor size calculation
-        let size_result = ir_utils::calculate_tensor_size(&large_value.ty, &large_value.shape);
+        let _size_result = ir_utils::calculate_tensor_size(&large_value.ty, &large_value.shape);
         // This might succeed or fail gracefully depending on implementation - both are acceptable
         
         // Test with a more conservative large size that won't overflow
