@@ -200,6 +200,10 @@ mod focused_boundary_case_tests;
 #[cfg(test)]
 mod boundary_tests_critical;
 
+/// Targeted comprehensive tests - focused edge case coverage with standard assertions
+#[cfg(test)]
+mod targeted_comprehensive_tests;
+
 /// Advanced boundary tests - extreme scenarios and edge cases
 #[cfg(test)]
 mod advanced_boundary_tests;
