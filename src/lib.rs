@@ -101,6 +101,9 @@ mod complex_attribute_tests;
 mod validation_and_module_tests;
 
 #[cfg(test)]
+mod boundary_comprehensive_tests;
+
+#[cfg(test)]
 mod focused_boundary_tests;
 
 #[cfg(test)]
