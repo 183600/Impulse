@@ -17,6 +17,9 @@ pub mod autotuning;
 mod new_edge_case_tests_extended;
 
 #[cfg(test)]
+mod advanced_comprehensive_tests;
+
+#[cfg(test)]
 mod additional_edge_cases;
 
 #[cfg(test)]
