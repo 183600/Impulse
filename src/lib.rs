@@ -216,6 +216,10 @@ mod comprehensive_coverage_tests;
 #[cfg(test)]
 mod critical_boundary_tests_final;
 
+/// New boundary coverage tests - extreme values, overflow detection, and special characters
+#[cfg(test)]
+mod new_boundary_coverage_tests;
+
 /// Additional edge case tests for boundary conditions
 #[cfg(test)]
 mod additional_boundary_edge_case_tests {
