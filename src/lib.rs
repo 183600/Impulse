@@ -101,6 +101,9 @@ mod validation_and_module_tests;
 mod focused_boundary_tests;
 
 #[cfg(test)]
+mod new_critical_boundary_tests;
+
+#[cfg(test)]
 mod critical_edge_case_tests;
 
 #[cfg(test)]
