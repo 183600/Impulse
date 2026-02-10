@@ -922,4 +922,180 @@ mod tests {
             _ => panic!("Expected Array attribute"),
         }
     }
+
+    /// Test 1: num_elements() returns None for shapes that would overflow
+    #[test]
+    fn test_num_elements_overflow() {
+        // Test with shape that would cause usize overflow
+        let value = Value {
+            name: "overflow_test".to_string(),
+            ty: Type::F32,
+            shape: vec![usize::MAX, 2], // This would overflow
+        };
+        assert_eq!(value.num_elements(), None);
+    }
+
+    /// Test 2: Type validation with nested tensors using TypeExtensions
+    #[test]
+    fn test_type_validation_nested_tensors() {
+        let nested_tensor = Type::Tensor {
+            element_type: Box::new(Type::Tensor {
+                element_type: Box::new(Type::F32),
+                shape: vec![2],
+            }),
+            shape: vec![3],
+        };
+        assert!(nested_tensor.is_valid_type());
+    }
+
+    /// Test 3: Negative float attribute comparison
+    #[test]
+    fn test_negative_float_attributes() {
+        let attr_neg = Attribute::Float(-3.14159);
+        let attr_neg2 = Attribute::Float(-3.14159);
+        let attr_pos = Attribute::Float(3.14159);
+        
+        assert_eq!(attr_neg, attr_neg2);
+        assert_ne!(attr_neg, attr_pos);
+    }
+
+    /// Test 4: Module with empty operations list management
+    #[test]
+    fn test_empty_module_operations() {
+        let mut module = Module::new("empty_ops");
+        assert!(module.operations.is_empty());
+        
+        // Add and remove operations
+        let op = Operation::new("test_op");
+        module.add_operation(op);
+        assert_eq!(module.operations.len(), 1);
+    }
+
+    /// Test 5: Module with all supported tensor element types
+    #[test]
+    fn test_module_with_all_tensor_types() {
+        let mut module = Module::new("all_types");
+        
+        let tensor_types = vec![
+            Type::Tensor { element_type: Box::new(Type::F32), shape: vec![1] },
+            Type::Tensor { element_type: Box::new(Type::F64), shape: vec![1] },
+            Type::Tensor { element_type: Box::new(Type::I32), shape: vec![1] },
+            Type::Tensor { element_type: Box::new(Type::I64), shape: vec![1] },
+            Type::Tensor { element_type: Box::new(Type::Bool), shape: vec![1] },
+        ];
+        
+        for (i, ty) in tensor_types.into_iter().enumerate() {
+            let mut op = Operation::new(&format!("op_{}", i));
+            op.inputs.push(Value {
+                name: format!("input_{}", i),
+                ty: ty,
+                shape: vec![1],
+            });
+            module.add_operation(op);
+        }
+        
+        assert_eq!(module.operations.len(), 5);
+    }
+
+    /// Test 6: Attribute with maximum and minimum integer values
+    #[test]
+    fn test_extreme_integer_attributes() {
+        let max_attr = Attribute::Int(i64::MAX);
+        let min_attr = Attribute::Int(i64::MIN);
+        
+        assert_eq!(max_attr, Attribute::Int(i64::MAX));
+        assert_eq!(min_attr, Attribute::Int(i64::MIN));
+        assert_ne!(max_attr, min_attr);
+    }
+
+    /// Test 7: Empty array attribute
+    #[test]
+    fn test_empty_array_attribute() {
+        let empty_array = Attribute::Array(vec![]);
+        match empty_array {
+            Attribute::Array(arr) => {
+                assert!(arr.is_empty());
+                assert_eq!(arr.len(), 0);
+            },
+            _ => panic!("Expected Array attribute"),
+        }
+    }
+
+    /// Test 8: Deeply nested attribute arrays (5 levels deep)
+    #[test]
+    fn test_deeply_nested_attribute_arrays() {
+        let deep_array = Attribute::Array(vec![
+            Attribute::Array(vec![
+                Attribute::Array(vec![
+                    Attribute::Array(vec![
+                        Attribute::Array(vec![Attribute::Int(42)])
+                    ])
+                ])
+            ])
+        ]);
+        
+        match deep_array {
+            Attribute::Array(l1) => {
+                match &l1[0] {
+                    Attribute::Array(l2) => {
+                        match &l2[0] {
+                            Attribute::Array(l3) => {
+                                match &l3[0] {
+                                    Attribute::Array(l4) => {
+                                        match &l4[0] {
+                                            Attribute::Array(l5) => {
+                                                match &l5[0] {
+                                                    Attribute::Int(42) => {},
+                                                    _ => panic!("Expected Int(42) at innermost level"),
+                                                }
+                                            },
+                                            _ => panic!("Expected Array at level 5"),
+                                        }
+                                    },
+                                    _ => panic!("Expected Array at level 4"),
+                                }
+                            },
+                            _ => panic!("Expected Array at level 3"),
+                        }
+                    },
+                    _ => panic!("Expected Array at level 2"),
+                }
+            },
+            _ => panic!("Expected Array at level 1"),
+        }
+    }
+
+    /// Test 9: Distinguish scalar (0D) from 1D tensor with single element
+    #[test]
+    fn test_scalar_vs_1d_tensor() {
+        let scalar = Value {
+            name: "scalar".to_string(),
+            ty: Type::F32,
+            shape: vec![], // 0-dimensional
+        };
+        
+        let single_element = Value {
+            name: "single_element".to_string(),
+            ty: Type::F32,
+            shape: vec![1], // 1-dimensional with 1 element
+        };
+        
+        assert!(scalar.shape.is_empty());
+        assert_eq!(single_element.shape, vec![1]);
+        assert_ne!(scalar.shape, single_element.shape);
+        
+        // Both have 1 element when computing product
+        assert_eq!(scalar.num_elements(), Some(1));
+        assert_eq!(single_element.num_elements(), Some(1));
+    }
+
+    /// Test 10: TypeExtensions trait usage for all primitive types
+    #[test]
+    fn test_type_extensions_all_primitive_types() {
+        assert!(Type::F32.is_valid_type());
+        assert!(Type::F64.is_valid_type());
+        assert!(Type::I32.is_valid_type());
+        assert!(Type::I64.is_valid_type());
+        assert!(Type::Bool.is_valid_type());
+    }
 }
