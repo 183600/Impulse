@@ -196,6 +196,10 @@ mod focused_edge_boundary_tests;
 #[cfg(test)]
 mod focused_boundary_case_tests;
 
+/// Critical boundary tests - edge cases with extreme values and overflow prevention
+#[cfg(test)]
+mod boundary_tests_critical;
+
 /// Advanced boundary tests - extreme scenarios and edge cases
 #[cfg(test)]
 mod advanced_boundary_tests;
