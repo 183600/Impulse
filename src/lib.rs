@@ -199,6 +199,10 @@ mod focused_edge_boundary_tests;
 #[cfg(test)]
 mod focused_boundary_case_tests;
 
+/// Focused edge boundary tests v2 - additional edge cases with standard assertions
+#[cfg(test)]
+mod focused_edge_boundary_tests_v2;
+
 /// Critical boundary tests - edge cases with extreme values and overflow prevention
 #[cfg(test)]
 mod boundary_tests_critical;
