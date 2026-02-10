@@ -158,6 +158,10 @@ mod comprehensive_boundary_edge_case_tests;
 #[cfg(test)]
 mod novel_edge_case_tests;
 
+/// Extra comprehensive edge case tests covering additional boundary conditions
+#[cfg(test)]
+mod extra_comprehensive_edge_case_tests;
+
 /// New comprehensive edge case tests covering more boundary conditions
 #[cfg(test)]
 mod comprehensive_boundary_tests {
