@@ -239,6 +239,10 @@ mod extra_comprehensive_boundary_tests;
 #[cfg(test)]
 mod final_comprehensive_edge_tests;
 
+/// Comprehensive edge case tests new - numerical precision, memory safety, and boundary conditions
+#[cfg(test)]
+mod comprehensive_edge_case_tests_new;
+
 /// Additional edge case tests for boundary conditions
 #[cfg(test)]
 mod additional_boundary_edge_case_tests {
