@@ -112,6 +112,9 @@ mod additional_comprehensive_edge_case_tests;
 #[cfg(test)]
 mod boundary_test_suite;
 
+#[cfg(test)]
+mod precision_boundary_tests;
+
 // Re-export key types at the crate level
 pub use compiler::{Compiler, CompilationResult};
 pub use ir::{Module, Value, Type};
