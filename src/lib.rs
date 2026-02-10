@@ -235,6 +235,10 @@ mod new_boundary_coverage_tests;
 #[cfg(test)]
 mod extra_comprehensive_boundary_tests;
 
+/// Boundary comprehensive extended tests - NaN, infinity, overflow prevention, and special characters
+#[cfg(test)]
+mod boundary_comprehensive_extended_tests;
+
 /// Final comprehensive edge tests - advanced boundary scenarios with overflow safety
 #[cfg(test)]
 mod final_comprehensive_edge_tests;
