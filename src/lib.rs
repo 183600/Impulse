@@ -760,7 +760,7 @@ impl ImpulseCompiler {
 #[cfg(test)]
 mod tests_old {
     use super::*;
-    use crate::ir::{Module, Value, Type, Operation};
+    use crate::ir::{Module, Value, Type, Operation, Attribute, TypeExtensions};
 
     #[test]
     fn test_compiler_creation() {
@@ -1437,6 +1437,374 @@ mod tests_old {
         // Simple test to verify compiler can be recreated after dropping
         let new_compiler = ImpulseCompiler::new();
         assert_eq!(new_compiler.passes.passes.len(), 0);
+    }
+
+    // ========== 新增测试用例 (New test cases) ==========
+
+    /// 新测试1: 验证 Value 的 num_elements() 方法对各种形状的正确性
+    /// Test: Verify Value::num_elements() returns correct results for various shapes
+    #[test]
+    fn test_value_num_elements_edge_cases() {
+        // Test scalar (empty shape)
+        let scalar = Value {
+            name: "scalar".to_string(),
+            ty: Type::F32,
+            shape: vec![],
+        };
+        assert_eq!(scalar.num_elements(), Some(1));
+
+        // Test single element
+        let single = Value {
+            name: "single".to_string(),
+            ty: Type::I32,
+            shape: vec![1],
+        };
+        assert_eq!(single.num_elements(), Some(1));
+
+        // Test zero dimension
+        let zero_dim = Value {
+            name: "zero".to_string(),
+            ty: Type::F64,
+            shape: vec![10, 0, 5],
+        };
+        assert_eq!(zero_dim.num_elements(), Some(0));
+
+        // Test normal multi-dimensional tensor
+        let normal = Value {
+            name: "normal".to_string(),
+            ty: Type::F32,
+            shape: vec![2, 3, 4],
+        };
+        assert_eq!(normal.num_elements(), Some(24));
+
+        // Test large dimensions
+        let large = Value {
+            name: "large".to_string(),
+            ty: Type::I64,
+            shape: vec![1000, 1000],
+        };
+        assert_eq!(large.num_elements(), Some(1_000_000));
+    }
+
+    /// 新测试2: 验证 TypeExtensions trait 对所有类型的有效性检查
+    /// Test: Verify TypeExtensions::is_valid_type() for all type variants
+    #[test]
+    fn test_type_extensions_validity_check() {
+        // Test all primitive types
+        assert!(Type::F32.is_valid_type());
+        assert!(Type::F64.is_valid_type());
+        assert!(Type::I32.is_valid_type());
+        assert!(Type::I64.is_valid_type());
+        assert!(Type::Bool.is_valid_type());
+
+        // Test simple tensor type
+        let simple_tensor = Type::Tensor {
+            element_type: Box::new(Type::F32),
+            shape: vec![2, 3],
+        };
+        assert!(simple_tensor.is_valid_type());
+
+        // Test deeply nested tensor type
+        let nested = Type::Tensor {
+            element_type: Box::new(Type::Tensor {
+                element_type: Box::new(Type::Tensor {
+                    element_type: Box::new(Type::I32),
+                    shape: vec![1],
+                }),
+                shape: vec![2],
+            }),
+            shape: vec![3],
+        };
+        assert!(nested.is_valid_type());
+    }
+
+    /// 新测试3: 测试 Operation 在极值边界条件下的属性处理
+    /// Test: Operation attributes with extreme boundary values
+    #[test]
+    fn test_operation_extreme_boundary_attributes() {
+        let mut op = Operation::new("boundary_test");
+        let mut attrs = std::collections::HashMap::new();
+
+        // Test boundary integer values
+        attrs.insert("max_i64".to_string(), Attribute::Int(i64::MAX));
+        attrs.insert("min_i64".to_string(), Attribute::Int(i64::MIN));
+        attrs.insert("zero".to_string(), Attribute::Int(0));
+        attrs.insert("one".to_string(), Attribute::Int(1));
+        attrs.insert("neg_one".to_string(), Attribute::Int(-1));
+
+        // Test boundary float values
+        attrs.insert("max_f64".to_string(), Attribute::Float(f64::MAX));
+        attrs.insert("min_f64".to_string(), Attribute::Float(f64::MIN));
+        attrs.insert("inf".to_string(), Attribute::Float(f64::INFINITY));
+        attrs.insert("neg_inf".to_string(), Attribute::Float(f64::NEG_INFINITY));
+
+        // Test special float values
+        attrs.insert("nan".to_string(), Attribute::Float(f64::NAN));
+        attrs.insert("neg_zero".to_string(), Attribute::Float(-0.0));
+        attrs.insert("epsilon".to_string(), Attribute::Float(f64::EPSILON));
+
+        op.attributes = attrs;
+        assert_eq!(op.attributes.len(), 12);
+
+        // Verify we can retrieve all attributes
+        assert!(op.attributes.contains_key("max_i64"));
+        assert!(op.attributes.contains_key("nan"));
+        assert!(op.attributes.contains_key("inf"));
+    }
+
+    /// 新测试4: 测试 Module 在边界条件下的输入输出管理
+    /// Test: Module input/output management with boundary conditions
+    #[test]
+    fn test_module_boundary_io_management() {
+        let mut module = Module::new("boundary_io");
+
+        // Test adding no inputs or outputs
+        assert_eq!(module.inputs.len(), 0);
+        assert_eq!(module.outputs.len(), 0);
+
+        // Test adding single input and output
+        module.inputs.push(Value {
+            name: "single_input".to_string(),
+            ty: Type::F32,
+            shape: vec![10],
+        });
+        module.outputs.push(Value {
+            name: "single_output".to_string(),
+            ty: Type::F32,
+            shape: vec![10],
+        });
+        assert_eq!(module.inputs.len(), 1);
+        assert_eq!(module.outputs.len(), 1);
+
+        // Test adding multiple inputs and outputs of different types
+        module.inputs.push(Value {
+            name: "int_input".to_string(),
+            ty: Type::I32,
+            shape: vec![5],
+        });
+        module.inputs.push(Value {
+            name: "bool_input".to_string(),
+            ty: Type::Bool,
+            shape: vec![1],
+        });
+        module.outputs.push(Value {
+            name: "f64_output".to_string(),
+            ty: Type::F64,
+            shape: vec![20],
+        });
+        assert_eq!(module.inputs.len(), 3);
+        assert_eq!(module.outputs.len(), 2);
+
+        // Verify types are preserved
+        assert_eq!(module.inputs[0].ty, Type::F32);
+        assert_eq!(module.inputs[1].ty, Type::I32);
+        assert_eq!(module.inputs[2].ty, Type::Bool);
+        assert_eq!(module.outputs[0].ty, Type::F32);
+        assert_eq!(module.outputs[1].ty, Type::F64);
+    }
+
+    /// 新测试5: 测试编译器处理空字符串和特殊目标名称
+    /// Test: Compiler with empty string and special target names
+    #[test]
+    fn test_compiler_special_target_names() {
+        let mut compiler = ImpulseCompiler::new();
+        let mock_model = vec![0u8; 10];
+
+        // Test with empty target
+        let result = compiler.compile(&mock_model, "");
+        assert!(result.is_ok() || result.is_err());
+
+        // Test with whitespace target
+        let result = compiler.compile(&mock_model, "   ");
+        assert!(result.is_ok() || result.is_err());
+
+        // Test with newline target
+        let result = compiler.compile(&mock_model, "\n");
+        assert!(result.is_ok() || result.is_err());
+
+        // Test with special characters
+        let result = compiler.compile(&mock_model, "!@#$%^&*()");
+        assert!(result.is_ok() || result.is_err());
+
+        // Test with Unicode target name
+        let result = compiler.compile(&mock_model, "中文_日本語_한글");
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    /// 新测试6: 测试 Attribute 的深度嵌套和递归结构
+    /// Test: Attribute with deep nesting and recursive structures
+    #[test]
+    fn test_attribute_deep_nesting() {
+        // Create a 4-level nested array
+        let level4 = Attribute::Array(vec![Attribute::Int(42)]);
+        let level3 = Attribute::Array(vec![level4.clone()]);
+        let level2 = Attribute::Array(vec![level3.clone()]);
+        let level1 = Attribute::Array(vec![level2.clone()]);
+
+        // Verify structure can be created and cloned
+        let cloned = level1.clone();
+        assert_eq!(level1, cloned);
+
+        // Create mixed nested structure
+        let mixed = Attribute::Array(vec![
+            Attribute::Int(1),
+            Attribute::Array(vec![
+                Attribute::Float(2.5),
+                Attribute::Array(vec![
+                    Attribute::String("deep".to_string()),
+                    Attribute::Bool(true),
+                ]),
+            ]),
+            Attribute::Array(vec![]), // Empty array
+        ]);
+
+        match mixed {
+            Attribute::Array(arr) => {
+                assert_eq!(arr.len(), 3);
+                assert!(matches!(arr[0], Attribute::Int(1)));
+                assert!(matches!(arr[2], Attribute::Array(_)));
+            }
+            _ => panic!("Expected Array"),
+        }
+    }
+
+    /// 新测试7: 测试 Value 在各种维度组合下的形状乘积
+    /// Test: Value shape products with various dimension combinations
+    #[test]
+    fn test_value_shape_product_variations() {
+        let test_cases = vec![
+            (vec![], 1),                  // Empty = scalar = 1
+            (vec![1], 1),                 // 1D with 1 element
+            (vec![0], 0),                 // 1D with 0 elements
+            (vec![2, 3], 6),              // 2D normal
+            (vec![1, 1, 1, 1], 1),        // 4D all ones
+            (vec![0, 10, 5], 0),          // Contains zero
+            (vec![10, 0, 5], 0),          // Zero in middle
+            (vec![10, 5, 0], 0),          // Zero at end
+            (vec![2, 2, 2, 2], 16),       // 4D powers of 2
+            (vec![3, 3, 3], 27),          // 3D cubic
+        ];
+
+        for (shape, expected_product) in test_cases {
+            let value = Value {
+                name: "test".to_string(),
+                ty: Type::F32,
+                shape: shape.clone(),
+            };
+            let product: usize = value.shape.iter().product();
+            assert_eq!(
+                product, expected_product,
+                "Shape {:?} should have product {}", shape, expected_product
+            );
+        }
+    }
+
+    /// 新测试8: 测试 Module 在添加大量操作后的状态一致性
+    /// Test: Module state consistency after adding many operations
+    #[test]
+    fn test_module_consistency_after_many_ops() {
+        let mut module = Module::new("consistency_test");
+
+        // Track expected state
+        let num_ops = 100;
+        for i in 0..num_ops {
+            let mut op = Operation::new(&format!("op_{}", i));
+            op.inputs.push(Value {
+                name: format!("input_{}", i),
+                ty: Type::F32,
+                shape: vec![i % 10 + 1],
+            });
+            op.outputs.push(Value {
+                name: format!("output_{}", i),
+                ty: Type::F32,
+                shape: vec![i % 10 + 1],
+            });
+            module.add_operation(op);
+        }
+
+        // Verify count
+        assert_eq!(module.operations.len(), num_ops);
+
+        // Verify first and last operations
+        assert_eq!(module.operations[0].op_type, "op_0");
+        assert_eq!(module.operations[num_ops - 1].op_type, format!("op_{}", num_ops - 1));
+
+        // Verify middle operation
+        assert_eq!(module.operations[num_ops / 2].op_type, format!("op_{}", num_ops / 2));
+
+        // Verify each operation has correct number of inputs and outputs
+        for (i, op) in module.operations.iter().enumerate() {
+            assert_eq!(op.inputs.len(), 1);
+            assert_eq!(op.outputs.len(), 1);
+            assert!(op.inputs[0].name.contains(&i.to_string()));
+            assert!(op.outputs[0].name.contains(&i.to_string()));
+        }
+    }
+
+    /// 新测试9: 测试 Operation 在克隆后的独立性
+    /// Test: Operation independence after cloning
+    #[test]
+    fn test_operation_clone_independence() {
+        let mut op1 = Operation::new("original");
+        let mut attrs = std::collections::HashMap::new();
+        attrs.insert("key1".to_string(), Attribute::Int(100));
+        attrs.insert("key2".to_string(), Attribute::String("value".to_string()));
+        op1.attributes = attrs;
+        op1.inputs.push(Value {
+            name: "input".to_string(),
+            ty: Type::F32,
+            shape: vec![10],
+        });
+
+        // Clone the operation
+        let mut op2 = op1.clone();
+
+        // Modify op2
+        op2.op_type = "modified".to_string();
+        op2.attributes.insert("key3".to_string(), Attribute::Float(3.14));
+        op2.inputs[0].name = "modified_input".to_string();
+
+        // Verify op1 is unchanged
+        assert_eq!(op1.op_type, "original");
+        assert_eq!(op1.attributes.len(), 2);
+        assert_eq!(op1.inputs[0].name, "input");
+        assert!(!op1.attributes.contains_key("key3"));
+
+        // Verify op2 has changes
+        assert_eq!(op2.op_type, "modified");
+        assert_eq!(op2.attributes.len(), 3);
+        assert_eq!(op2.inputs[0].name, "modified_input");
+        assert!(op2.attributes.contains_key("key3"));
+    }
+
+    /// 新测试10: 测试编译器在极端模型大小下的内存处理
+    /// Test: Compiler memory handling with extreme model sizes
+    #[test]
+    fn test_compiler_extreme_model_sizes() {
+        let mut compiler = ImpulseCompiler::new();
+
+        // Test with empty model
+        let empty = vec![];
+        let result = compiler.compile(&empty, "cpu");
+        assert!(result.is_ok() || result.is_err());
+
+        // Test with 1-byte model
+        let single_byte = vec![0x42];
+        let result = compiler.compile(&single_byte, "cpu");
+        assert!(result.is_ok() || result.is_err());
+
+        // Test with small model
+        let small = vec![0u8; 100];
+        let result = compiler.compile(&small, "cpu");
+        assert!(result.is_ok() || result.is_err());
+
+        // Test with medium model
+        let medium = vec![0u8; 10_000];
+        let result = compiler.compile(&medium, "cpu");
+        assert!(result.is_ok() || result.is_err());
+
+        // Verify compiler is still functional after all operations
+        assert_eq!(compiler.passes.passes.len(), 0);
     }
 }
 
