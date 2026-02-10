@@ -235,6 +235,10 @@ mod new_boundary_coverage_tests;
 #[cfg(test)]
 mod extra_comprehensive_boundary_tests;
 
+/// Final comprehensive edge tests - advanced boundary scenarios with overflow safety
+#[cfg(test)]
+mod final_comprehensive_edge_tests;
+
 /// Additional edge case tests for boundary conditions
 #[cfg(test)]
 mod additional_boundary_edge_case_tests {
