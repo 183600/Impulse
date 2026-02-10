@@ -169,12 +169,9 @@ mod extra_comprehensive_edge_case_tests;
 #[cfg(test)]
 mod specialized_edge_case_tests;
 
-/// New comprehensive edge case tests covering more boundary conditions
+/// New edge boundary tests covering NaN, infinity, dynamic dimensions, and other edge cases
 #[cfg(test)]
-mod comprehensive_boundary_tests {
-    use super::*;
-    use crate::ir::{Module, Value, Type, Operation};
-    use std::collections::HashMap;
+mod new_edge_boundary_tests;
 
 /// Additional edge case tests for boundary conditions
 #[cfg(test)]
@@ -420,6 +417,13 @@ mod additional_boundary_edge_case_tests {
         assert_eq!(module.outputs[1].ty, Type::Bool);
     }
 }
+
+/// New comprehensive boundary tests module continuation
+#[cfg(test)]
+mod comprehensive_boundary_tests {
+    use super::*;
+    use crate::ir::{Module, Value, Type, Operation, Attribute};
+    use std::collections::HashMap;
 
     /// Test 1: Module with all possible data types
     #[test]
