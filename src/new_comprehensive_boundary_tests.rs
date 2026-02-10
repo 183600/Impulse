@@ -162,7 +162,7 @@ fn test_module_operations_without_io() {
 /// Test 8: Value with alternating dimension pattern
 #[test]
 fn test_value_alternating_dimensions() {
-    // Test with dimensions like [1, 2, 1, 2, 1, 2]
+    // Test with dimensions like [1, 2, 1, 2, 1, 2, 1]
     let alternating_shape = vec![1, 2, 1, 2, 1, 2, 1];
     let value = Value {
         name: "alternating".to_string(),
@@ -172,7 +172,7 @@ fn test_value_alternating_dimensions() {
 
     assert_eq!(value.shape, alternating_shape);
     let product: usize = value.shape.iter().product();
-    assert_eq!(product, 4); // 1 * 2 * 1 * 2 * 1 * 2 * 1 = 4
+    assert_eq!(product, 8); // 1 * 2 * 1 * 2 * 1 * 2 * 1 = 8
 }
 
 /// Test 9: Attribute with string containing Unicode characters
