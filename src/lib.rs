@@ -184,6 +184,10 @@ mod new_edge_boundary_tests;
 #[cfg(test)]
 mod focused_comprehensive_edge_case_tests_extended;
 
+/// Focused edge boundary tests - critical edge cases with assert! and assert_eq!
+#[cfg(test)]
+mod focused_edge_boundary_tests;
+
 /// Advanced boundary tests - extreme scenarios and edge cases
 #[cfg(test)]
 mod advanced_boundary_tests;
