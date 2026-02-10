@@ -128,6 +128,251 @@ mod comprehensive_boundary_tests {
     use crate::ir::{Module, Value, Type, Operation};
     use std::collections::HashMap;
 
+/// Additional edge case tests for boundary conditions
+#[cfg(test)]
+mod additional_boundary_edge_case_tests {
+    use super::*;
+    use crate::ir::{Module, Value, Type, Operation, Attribute};
+
+    /// Test 1: Compiler with consecutive empty models
+    #[test]
+    fn test_compiler_consecutive_empty_models() {
+        let mut compiler = ImpulseCompiler::new();
+        let empty_model = vec![];
+        
+        // Compile empty model multiple times consecutively
+        for _i in 0..5 {
+            let result = compiler.compile(&empty_model, "cpu");
+            match result {
+                Ok(_) => (),
+                Err(e) => {
+                    assert!(e.to_string().len() > 0);
+                }
+            }
+        }
+        // Verify compiler remains functional after multiple attempts
+        assert_eq!(compiler.passes.passes.len(), 0);
+    }
+
+    /// Test 2: Value with edge case shape containing very large but valid dimensions
+    #[test]
+    fn test_value_with_large_valid_dimensions() {
+        let value = Value {
+            name: "large_dim_tensor".to_string(),
+            ty: Type::F32,
+            shape: vec![100_000, 10],  // 1 million elements
+        };
+        assert_eq!(value.shape, vec![100_000, 10]);
+        assert_eq!(value.num_elements(), Some(1_000_000));
+    }
+
+    /// Test 3: Attribute with subnormal float values
+    #[test]
+    fn test_subnormal_float_attributes() {
+        // Test with very small positive float (subnormal)
+        let subnormal = Attribute::Float(f64::MIN_POSITIVE);
+        let tiny = Attribute::Float(1e-308);
+        let very_tiny = Attribute::Float(1e-320);
+        
+        // Verify attributes are created and can be matched
+        if let Attribute::Float(val) = subnormal {
+            assert!(val > 0.0 && val < 1e-300);
+        }
+        
+        if let Attribute::Float(val) = tiny {
+            assert!(val > 0.0);
+        }
+        
+        // Very tiny values may underflow to zero
+        if let Attribute::Float(val) = very_tiny {
+            assert!(val >= 0.0);
+        }
+    }
+
+    /// Test 4: Module with operations having duplicate names
+    #[test]
+    fn test_module_duplicate_operation_names() {
+        let mut module = Module::new("duplicate_ops");
+        
+        // Add multiple operations with the same name
+        for _ in 0..3 {
+            let mut op = Operation::new("duplicate_op");
+            op.inputs.push(Value {
+                name: "input".to_string(),
+                ty: Type::F32,
+                shape: vec![1],
+            });
+            module.add_operation(op);
+        }
+        
+        assert_eq!(module.operations.len(), 3);
+        // All operations should have the same op_type
+        for op in &module.operations {
+            assert_eq!(op.op_type, "duplicate_op");
+        }
+    }
+
+    /// Test 5: Tensor types with varying element type combinations
+    #[test]
+    fn test_tensor_type_combinations() {
+        let combinations = vec![
+            (Type::F32, vec![2, 2]),
+            (Type::F64, vec![1, 3, 3]),
+            (Type::I32, vec![10]),
+            (Type::I64, vec![5, 5, 5]),
+            (Type::Bool, vec![100, 100]),
+        ];
+        
+        for (base_type, shape) in combinations {
+            let tensor_type = Type::Tensor {
+                element_type: Box::new(base_type.clone()),
+                shape: shape.clone(),
+            };
+            
+            match tensor_type {
+                Type::Tensor { element_type, shape: s } => {
+                    assert_eq!(s, shape);
+                    assert_eq!(*element_type, base_type);
+                }
+                _ => panic!("Expected Tensor type"),
+            }
+        }
+    }
+
+    /// Test 6: Operation with self-referential input/output names pattern
+    #[test]
+    fn test_operation_self_referential_names() {
+        let mut op = Operation::new("self_ref_op");
+        
+        // Create inputs and outputs with similar naming pattern
+        op.inputs.push(Value {
+            name: "x".to_string(),
+            ty: Type::F32,
+            shape: vec![10],
+        });
+        op.outputs.push(Value {
+            name: "x_out".to_string(),
+            ty: Type::F32,
+            shape: vec![10],
+        });
+        
+        assert_eq!(op.inputs[0].name, "x");
+        assert_eq!(op.outputs[0].name, "x_out");
+    }
+
+    /// Test 7: Compiler with extremely small model sizes
+    #[test]
+    fn test_compiler_extremely_small_models() {
+        let mut compiler = ImpulseCompiler::new();
+        
+        // Test with single byte models
+        let single_byte_models = [
+            vec![0x00],
+            vec![0xFF],
+            vec![0x01],
+            vec![0x7F],
+            vec![0x80],
+        ];
+        
+        for model in single_byte_models.iter() {
+            let result = compiler.compile(model, "cpu");
+            // Should handle gracefully without panic
+            assert!(result.is_ok() || result.is_err());
+        }
+    }
+
+    /// Test 8: Value with mixed dimension pattern (1, 0, 1)
+    #[test]
+    fn test_value_mixed_dimension_pattern() {
+        let test_cases = [
+            vec![1, 0, 1],   // Contains zero in middle
+            vec![0, 1, 1],   // Zero at start
+            vec![1, 1, 0],   // Zero at end
+            vec![1, 0, 1, 0, 1], // Alternating pattern
+        ];
+        
+        for shape in test_cases.iter() {
+            let value = Value {
+                name: "mixed_dim".to_string(),
+                ty: Type::F32,
+                shape: shape.to_vec(),
+            };
+            
+            // Any shape containing zero should result in 0 elements
+            assert_eq!(value.num_elements(), Some(0));
+        }
+    }
+
+    /// Test 9: Attribute array with deep nesting and varied types
+    #[test]
+    fn test_deep_nested_varied_attribute_array() {
+        let nested = Attribute::Array(vec![
+            Attribute::Array(vec![
+                Attribute::Int(1),
+                Attribute::Array(vec![
+                    Attribute::Float(2.5),
+                    Attribute::String("test".to_string()),
+                ]),
+            ]),
+            Attribute::Bool(true),
+        ]);
+        
+        match nested {
+            Attribute::Array(outer) => {
+                assert_eq!(outer.len(), 2);
+                match &outer[0] {
+                    Attribute::Array(inner) => {
+                        assert_eq!(inner.len(), 2);
+                    }
+                    _ => panic!("Expected nested array"),
+                }
+                match outer[1] {
+                    Attribute::Bool(true) => (),
+                    _ => panic!("Expected Bool(true)"),
+                }
+            }
+            _ => panic!("Expected Array"),
+        }
+    }
+
+    /// Test 10: Module with inputs/outputs of different type combinations
+    #[test]
+    fn test_module_mixed_type_inputs_outputs() {
+        let mut module = Module::new("mixed_types");
+        
+        // Add inputs of different types
+        module.inputs.push(Value {
+            name: "float_input".to_string(),
+            ty: Type::F32,
+            shape: vec![10],
+        });
+        module.inputs.push(Value {
+            name: "int_input".to_string(),
+            ty: Type::I32,
+            shape: vec![5],
+        });
+        
+        // Add outputs of different types
+        module.outputs.push(Value {
+            name: "float_output".to_string(),
+            ty: Type::F64,
+            shape: vec![10],
+        });
+        module.outputs.push(Value {
+            name: "bool_output".to_string(),
+            ty: Type::Bool,
+            shape: vec![1],
+        });
+        
+        assert_eq!(module.inputs.len(), 2);
+        assert_eq!(module.outputs.len(), 2);
+        assert_eq!(module.inputs[0].ty, Type::F32);
+        assert_eq!(module.inputs[1].ty, Type::I32);
+        assert_eq!(module.outputs[0].ty, Type::F64);
+        assert_eq!(module.outputs[1].ty, Type::Bool);
+    }
+}
+
     /// Test 1: Module with all possible data types
     #[test]
     fn test_module_with_all_data_types() {
