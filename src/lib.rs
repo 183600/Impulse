@@ -121,6 +121,305 @@ mod comprehensive_boundary_edge_tests;
 #[cfg(test)]
 mod focused_edge_case_coverage;
 
+/// New comprehensive edge case tests covering more boundary conditions
+#[cfg(test)]
+mod comprehensive_boundary_tests {
+    use super::*;
+    use crate::ir::{Module, Value, Type, Operation};
+    use std::collections::HashMap;
+
+    /// Test 1: Module with all possible data types
+    #[test]
+    fn test_module_with_all_data_types() {
+        let mut module = Module::new("all_types_module");
+        
+        // Test all primitive types
+        let types = [
+            Type::F32,
+            Type::F64,
+            Type::I32,
+            Type::I64,
+            Type::Bool,
+        ];
+        
+        for (i, ty) in types.iter().enumerate() {
+            let mut op = Operation::new(&format!("test_type_{}", i));
+            op.inputs.push(Value {
+                name: format!("input_{}", i),
+                ty: ty.clone(),
+                shape: vec![2, 2],
+            });
+            module.add_operation(op);
+        }
+        
+        assert_eq!(module.operations.len(), 5);
+        for i in 0..5 {
+            assert_eq!(module.operations[i].inputs[0].ty, types[i]);
+        }
+    }
+
+    /// Test 2: Value with maximum possible dimensions
+    #[test]
+    fn test_value_with_many_dimensions() {
+        // Create a value with many dimensions (stress test)
+        let mut shape = Vec::new();
+        for i in 1..=8 {
+            shape.push(i);
+        }
+        
+        let value = Value {
+            name: "high_dim_tensor".to_string(),
+            ty: Type::F32,
+            shape: shape.clone(),
+        };
+        
+        assert_eq!(value.shape.len(), 8);
+        assert_eq!(value.shape, vec![1, 2, 3, 4, 5, 6, 7, 8]);
+        
+        // Calculate total elements
+        let product: usize = value.shape.iter().product();
+        assert_eq!(product, 40320);
+    }
+
+    /// Test 3: Operation with all attribute types
+    #[test]
+    fn test_operation_with_all_attribute_types() {
+        let mut op = Operation::new("all_attrs_op");
+        let mut attrs = HashMap::new();
+        
+        // Add all attribute types
+        attrs.insert("max_int".to_string(), crate::ir::Attribute::Int(i64::MAX));
+        attrs.insert("min_int".to_string(), crate::ir::Attribute::Int(i64::MIN));
+        attrs.insert("zero_int".to_string(), crate::ir::Attribute::Int(0));
+        attrs.insert("max_float".to_string(), crate::ir::Attribute::Float(f64::MAX));
+        attrs.insert("min_float".to_string(), crate::ir::Attribute::Float(f64::MIN));
+        attrs.insert("pi".to_string(), crate::ir::Attribute::Float(std::f64::consts::PI));
+        attrs.insert("empty_str".to_string(), crate::ir::Attribute::String("".to_string()));
+        attrs.insert("normal_str".to_string(), crate::ir::Attribute::String("test".to_string()));
+        attrs.insert("true_bool".to_string(), crate::ir::Attribute::Bool(true));
+        attrs.insert("false_bool".to_string(), crate::ir::Attribute::Bool(false));
+        attrs.insert("empty_array".to_string(), crate::ir::Attribute::Array(vec![]));
+        attrs.insert("int_array".to_string(), crate::ir::Attribute::Array(vec![
+            crate::ir::Attribute::Int(1),
+            crate::ir::Attribute::Int(2),
+            crate::ir::Attribute::Int(3),
+        ]));
+        
+        op.attributes = attrs;
+        
+        assert_eq!(op.attributes.len(), 12);
+        assert_eq!(op.attributes.get("max_int"), Some(&crate::ir::Attribute::Int(i64::MAX)));
+        assert_eq!(op.attributes.get("min_int"), Some(&crate::ir::Attribute::Int(i64::MIN)));
+        assert_eq!(op.attributes.get("zero_int"), Some(&crate::ir::Attribute::Int(0)));
+        assert_eq!(op.attributes.get("pi"), Some(&crate::ir::Attribute::Float(std::f64::consts::PI)));
+    }
+
+    /// Test 4: Nested tensor types with different depths
+    #[test]
+    fn test_nested_tensor_different_depths() {
+        // Create nested tensors with different depths
+        let depth1 = Type::Tensor {
+            element_type: Box::new(Type::F32),
+            shape: vec![2],
+        };
+        
+        let depth2 = Type::Tensor {
+            element_type: Box::new(depth1.clone()),
+            shape: vec![3],
+        };
+        
+        let depth3 = Type::Tensor {
+            element_type: Box::new(depth2.clone()),
+            shape: vec![4],
+        };
+        
+        // Verify they are different
+        assert_ne!(depth1, depth2);
+        assert_ne!(depth2, depth3);
+        assert_ne!(depth1, depth3);
+    }
+
+    /// Test 5: Compiler with different target architectures
+    #[test]
+    fn test_compiler_with_various_targets() {
+        let mut compiler = ImpulseCompiler::new();
+        let mock_model = vec![1u8, 2u8, 3u8];
+        
+        let targets = [
+            "cpu",
+            "gpu",
+            "npu",
+            "tpu",
+            "fpga",
+            "cuda",
+            "opencl",
+            "metal",
+            "vulkan",
+            "rocm",
+        ];
+        
+        for target in targets.iter() {
+            let result = compiler.compile(&mock_model, target);
+            // Should not panic regardless of target validity
+            match result {
+                Ok(_) => println!("Compilation succeeded for target: {}", target),
+                Err(e) => {
+                    let err_msg = e.to_string();
+                    assert!(err_msg.len() > 0);
+                }
+            }
+        }
+    }
+
+    /// Test 6: Value with single element tensors
+    #[test]
+    fn test_single_element_tensors() {
+        // 1x1x1 tensor
+        let single_elem = Value {
+            name: "single".to_string(),
+            ty: Type::F32,
+            shape: vec![1, 1, 1],
+        };
+        assert_eq!(single_elem.shape.iter().product::<usize>(), 1);
+        
+        // 1D tensor with single element
+        let single_1d = Value {
+            name: "single_1d".to_string(),
+            ty: Type::I32,
+            shape: vec![1],
+        };
+        assert_eq!(single_1d.shape.iter().product::<usize>(), 1);
+    }
+
+    /// Test 7: Module with input/output connections
+    #[test]
+    fn test_module_with_io_connections() {
+        let mut module = Module::new("io_test_module");
+        
+        // Add inputs
+        module.inputs.push(Value {
+            name: "input_a".to_string(),
+            ty: Type::F32,
+            shape: vec![10],
+        });
+        module.inputs.push(Value {
+            name: "input_b".to_string(),
+            ty: Type::F32,
+            shape: vec![10],
+        });
+        
+        // Add operation that connects inputs
+        let mut op = Operation::new("add");
+        op.inputs.push(module.inputs[0].clone());
+        op.inputs.push(module.inputs[1].clone());
+        let output_value = Value {
+            name: "output".to_string(),
+            ty: Type::F32,
+            shape: vec![10],
+        };
+        op.outputs.push(output_value.clone());
+        module.add_operation(op);
+        
+        // Add output
+        module.outputs.push(output_value);
+        
+        assert_eq!(module.inputs.len(), 2);
+        assert_eq!(module.outputs.len(), 1);
+        assert_eq!(module.operations.len(), 1);
+        assert_eq!(module.operations[0].inputs.len(), 2);
+    }
+
+    /// Test 8: Attribute with nested arrays
+    #[test]
+    fn test_deeply_nested_array_attributes() {
+        // Create a deeply nested array structure
+        let deep_nested = crate::ir::Attribute::Array(vec![
+            crate::ir::Attribute::Array(vec![
+                crate::ir::Attribute::Array(vec![
+                    crate::ir::Attribute::Int(1),
+                    crate::ir::Attribute::Int(2),
+                ]),
+                crate::ir::Attribute::Array(vec![
+                    crate::ir::Attribute::Int(3),
+                    crate::ir::Attribute::Int(4),
+                ]),
+            ]),
+            crate::ir::Attribute::Array(vec![
+                crate::ir::Attribute::Array(vec![
+                    crate::ir::Attribute::Int(5),
+                ]),
+            ]),
+        ]);
+        
+        match deep_nested {
+            crate::ir::Attribute::Array(outer) => {
+                assert_eq!(outer.len(), 2);
+                match &outer[0] {
+                    crate::ir::Attribute::Array(mid) => {
+                        assert_eq!(mid.len(), 2);
+                    },
+                    _ => panic!("Expected nested array"),
+                }
+            },
+            _ => panic!("Expected Array attribute"),
+        }
+    }
+
+    /// Test 9: Compiler with null byte in model data
+    #[test]
+    fn test_compiler_with_null_bytes() {
+        let mut compiler = ImpulseCompiler::new();
+        
+        // Model with null bytes scattered throughout
+        let model_with_nulls = vec![
+            0xFF, 0x00, 0xFE, 0x00, 0x00, 0x00, 0xFD, 0x00,
+            0x00, 0x00, 0x00, 0xFC, 0xFB, 0xFA, 0x00, 0xF9,
+        ];
+        
+        let result = compiler.compile(&model_with_nulls, "cpu");
+        // Should handle null bytes gracefully without crashing
+        match result {
+            Ok(_) => (),
+            Err(e) => {
+                assert!(e.to_string().len() > 0);
+            }
+        }
+    }
+
+    /// Test 10: Multiple modules with interdependent structures
+    #[test]
+    fn test_multiple_interdependent_modules() {
+        // Create multiple modules that reference each other's outputs
+        let mut module1 = Module::new("producer_module");
+        let mut module2 = Module::new("consumer_module");
+        
+        // Module 1 produces a value
+        let mut producer_op = Operation::new("produce");
+        let produced_value = Value {
+            name: "produced_value".to_string(),
+            ty: Type::F32,
+            shape: vec![5, 5],
+        };
+        producer_op.outputs.push(produced_value.clone());
+        module1.add_operation(producer_op);
+        module1.outputs.push(produced_value);
+        
+        // Module 2 consumes a value (simulated)
+        let mut consumer_op = Operation::new("consume");
+        consumer_op.inputs.push(module1.outputs[0].clone());
+        consumer_op.outputs.push(Value {
+            name: "consumed_output".to_string(),
+            ty: Type::F32,
+            shape: vec![5, 5],
+        });
+        module2.add_operation(consumer_op);
+        
+        assert_eq!(module1.operations.len(), 1);
+        assert_eq!(module2.operations.len(), 1);
+        assert_eq!(module2.operations[0].inputs[0].name, "produced_value");
+    }
+}
+
 // Re-export key types at the crate level
 pub use compiler::{Compiler, CompilationResult};
 pub use ir::{Module, Value, Type};
