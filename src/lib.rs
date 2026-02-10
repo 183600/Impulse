@@ -133,6 +133,9 @@ mod focused_critical_edge_case_tests;
 #[cfg(test)]
 mod unique_boundary_tests;
 
+#[cfg(test)]
+mod focused_final_edge_case_tests;
+
 /// New comprehensive edge case tests covering more boundary conditions
 #[cfg(test)]
 mod comprehensive_boundary_tests {
