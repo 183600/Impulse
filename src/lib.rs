@@ -297,6 +297,203 @@ mod focused_critical_boundary_tests_v2;
 #[cfg(test)]
 mod pragmatic_boundary_tests;
 
+/// Critical edge case tests for compiler safety and robustness
+#[cfg(test)]
+mod critical_compiler_edge_tests {
+    use super::*;
+    use crate::ir::{Module, Value, Type, Operation, Attribute};
+
+    /// Test 1: Compiler with NaN float values in attributes
+    #[test]
+    fn test_nan_float_attributes() {
+        let nan_val = Attribute::Float(f64::NAN);
+        let neg_inf_val = Attribute::Float(f64::NEG_INFINITY);
+        let pos_inf_val = Attribute::Float(f64::INFINITY);
+
+        // Verify NaN attributes are created and matched
+        match nan_val {
+            Attribute::Float(val) => assert!(val.is_nan()),
+            _ => panic!("Expected Float attribute"),
+        }
+
+        match neg_inf_val {
+            Attribute::Float(val) => assert!(val.is_infinite() && val.is_sign_negative()),
+            _ => panic!("Expected negative infinity attribute"),
+        }
+
+        match pos_inf_val {
+            Attribute::Float(val) => assert!(val.is_infinite() && val.is_sign_positive()),
+            _ => panic!("Expected positive infinity attribute"),
+        }
+    }
+
+    /// Test 2: Operation with overflow prevention in shape calculations
+    #[test]
+    fn test_shape_overflow_prevention() {
+        // Use num_elements() which uses checked_mul for overflow detection
+        let safe_value = Value {
+            name: "safe_tensor".to_string(),
+            ty: Type::F32,
+            shape: vec![10000, 10000],
+        };
+        assert_eq!(safe_value.num_elements(), Some(100_000_000));
+
+        // Test with empty shape (scalar)
+        let scalar = Value {
+            name: "scalar".to_string(),
+            ty: Type::F32,
+            shape: vec![],
+        };
+        assert_eq!(scalar.num_elements(), Some(1));
+
+        // Test with zero dimension
+        let zero_dim = Value {
+            name: "zero_dim".to_string(),
+            ty: Type::F32,
+            shape: vec![0, 10],
+        };
+        assert_eq!(zero_dim.num_elements(), Some(0));
+    }
+
+    /// Test 3: Value with maximum and minimum i64 values in attributes
+    #[test]
+    fn test_extreme_int_values() {
+        let max_int_attr = Attribute::Int(i64::MAX);
+        let min_int_attr = Attribute::Int(i64::MIN);
+        let zero_attr = Attribute::Int(0);
+
+        match max_int_attr {
+            Attribute::Int(val) => assert_eq!(val, i64::MAX),
+            _ => panic!("Expected Int attribute"),
+        }
+
+        match min_int_attr {
+            Attribute::Int(val) => assert_eq!(val, i64::MIN),
+            _ => panic!("Expected Int attribute"),
+        }
+
+        match zero_attr {
+            Attribute::Int(val) => assert_eq!(val, 0),
+            _ => panic!("Expected Int attribute"),
+        }
+    }
+
+    /// Test 4: Module with empty input/output lists
+    #[test]
+    fn test_empty_module_lists() {
+        let mut module = Module::new("empty_module");
+
+        // Module starts with empty lists
+        assert_eq!(module.inputs.len(), 0);
+        assert_eq!(module.outputs.len(), 0);
+        assert_eq!(module.operations.len(), 0);
+
+        // Add operation without affecting inputs/outputs
+        let mut op = Operation::new("noop");
+        op.inputs.push(Value {
+            name: "internal".to_string(),
+            ty: Type::F32,
+            shape: vec![1],
+        });
+        module.add_operation(op);
+
+        // Inputs and outputs should still be empty
+        assert_eq!(module.inputs.len(), 0);
+        assert_eq!(module.outputs.len(), 0);
+        assert_eq!(module.operations.len(), 1);
+    }
+
+    /// Test 5: Value with special Unicode characters in names
+    #[test]
+    fn test_unicode_names() {
+        let unicode_names = vec![
+            "张量_数据",
+            "テンソル",
+            "Тензор",
+            "tensor@special#chars",
+            "test\twith\nnewline",
+            "emoji🚀test",
+        ];
+
+        for name in unicode_names {
+            let value = Value {
+                name: name.to_string(),
+                ty: Type::F32,
+                shape: vec![2, 2],
+            };
+            assert_eq!(value.name, name);
+        }
+    }
+
+    /// Test 6: Empty attribute array handling
+    #[test]
+    fn test_empty_attribute_array() {
+        let empty_array = Attribute::Array(vec![]);
+
+        match empty_array {
+            Attribute::Array(arr) => assert_eq!(arr.len(), 0),
+            _ => panic!("Expected empty Array attribute"),
+        }
+    }
+
+    /// Test 7: Operation with duplicate attribute keys (last wins)
+    #[test]
+    fn test_duplicate_attribute_keys() {
+        let mut op = Operation::new("dup_attrs");
+        let mut attrs = std::collections::HashMap::new();
+
+        // Insert same key multiple times - last value wins
+        attrs.insert("key".to_string(), Attribute::Int(1));
+        attrs.insert("key".to_string(), Attribute::Int(2));
+        attrs.insert("key".to_string(), Attribute::Int(3));
+
+        op.attributes = attrs;
+
+        // Should only have one entry with the last value
+        assert_eq!(op.attributes.len(), 1);
+        match op.attributes.get("key") {
+            Some(Attribute::Int(val)) => assert_eq!(*val, 3),
+            _ => panic!("Expected Int(3) for 'key'"),
+        }
+    }
+
+    /// Test 8: Very long string attribute
+    #[test]
+    fn test_long_string_attribute() {
+        let long_string = "x".repeat(100_000);
+        let attr = Attribute::String(long_string.clone());
+
+        match attr {
+            Attribute::String(s) => assert_eq!(s.len(), 100_000),
+            _ => panic!("Expected String attribute"),
+        }
+    }
+
+    /// Test 9: Tensor with very large single dimension
+    #[test]
+    fn test_very_large_single_dimension() {
+        let large_dim_value = Value {
+            name: "large_1d".to_string(),
+            ty: Type::F32,
+            shape: vec![1_000_000_000], // 1 billion elements
+        };
+        assert_eq!(large_dim_value.num_elements(), Some(1_000_000_000));
+    }
+
+    /// Test 10: Module with operation containing no inputs/outputs
+    #[test]
+    fn test_operation_without_io() {
+        let mut module = Module::new("no_io_module");
+        let op = Operation::new("stateful_op"); // Op with no explicit inputs/outputs
+
+        module.add_operation(op);
+
+        assert_eq!(module.operations.len(), 1);
+        assert_eq!(module.operations[0].inputs.len(), 0);
+        assert_eq!(module.operations[0].outputs.len(), 0);
+    }
+}
+
 /// Enhanced boundary and edge case tests - numerical precision, overflow, and edge conditions
 #[cfg(test)]
 mod enhanced_boundary_edge_tests;
