@@ -148,6 +148,10 @@ mod unique_boundary_tests;
 #[cfg(test)]
 mod focused_final_edge_case_tests;
 
+/// Novel comprehensive boundary tests - additional edge cases with unique boundary conditions
+#[cfg(test)]
+mod novel_comprehensive_boundary_tests;
+
 #[cfg(test)]
 mod new_comprehensive_boundary_tests;
 
