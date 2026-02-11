@@ -14,6 +14,9 @@ pub mod utils;
 pub mod autotuning;
 
 #[cfg(test)]
+mod focused_edge_boundary_comprehensive_tests;
+
+#[cfg(test)]
 mod new_edge_case_tests_extended;
 
 #[cfg(test)]
