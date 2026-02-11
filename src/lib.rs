@@ -298,6 +298,10 @@ mod pragmatic_boundary_tests;
 #[cfg(test)]
 mod enhanced_boundary_edge_tests;
 
+/// Essential boundary tests - core edge cases for IR components (overflow, NaN, extreme values)
+#[cfg(test)]
+mod essential_boundary_tests;
+
 /// Additional edge case tests for boundary conditions
 #[cfg(test)]
 mod additional_boundary_edge_case_tests {
