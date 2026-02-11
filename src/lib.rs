@@ -97,6 +97,10 @@ mod comprehensive_edge_case_tests;
 #[cfg(test)]
 mod edge_case_tests_additional;
 
+/// Critical compiler boundary tests - essential edge cases for compiler safety
+#[cfg(test)]
+mod critical_compiler_boundary_tests;
+
 #[cfg(test)]
 mod type_conversion_edge_case_tests;
 
