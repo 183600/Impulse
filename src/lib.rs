@@ -293,6 +293,10 @@ mod unique_critical_boundary_tests;
 #[cfg(test)]
 mod focused_critical_boundary_tests_v2;
 
+/// Focused critical boundary tests v3 - Additional edge case coverage with standard assertions
+#[cfg(test)]
+mod focused_critical_boundary_tests_v3;
+
 /// Pragmatic boundary tests - focused on real-world edge cases
 #[cfg(test)]
 mod pragmatic_boundary_tests;
