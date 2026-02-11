@@ -290,6 +290,10 @@ mod unique_critical_boundary_tests;
 #[cfg(test)]
 mod focused_critical_boundary_tests_v2;
 
+/// Pragmatic boundary tests - focused on real-world edge cases
+#[cfg(test)]
+mod pragmatic_boundary_tests;
+
 /// Enhanced boundary and edge case tests - numerical precision, overflow, and edge conditions
 #[cfg(test)]
 mod enhanced_boundary_edge_tests;
