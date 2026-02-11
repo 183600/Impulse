@@ -199,6 +199,10 @@ mod focused_edge_boundary_tests;
 #[cfg(test)]
 mod focused_boundary_case_tests;
 
+/// Edge case and boundary tests - extreme scenarios with standard library assertions
+#[cfg(test)]
+mod edge_case_boundary_tests;
+
 /// Focused edge boundary tests v2 - additional edge cases with standard assertions
 #[cfg(test)]
 mod focused_edge_boundary_tests_v2;
