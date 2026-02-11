@@ -100,6 +100,10 @@ mod edge_case_tests_additional;
 #[cfg(test)]
 mod type_conversion_edge_case_tests;
 
+/// Focused comprehensive edge tests - New boundary cases with standard assertions
+#[cfg(test)]
+mod focused_comprehensive_edge_tests_new;
+
 #[cfg(test)]
 mod complex_attribute_tests;
 
