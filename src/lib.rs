@@ -270,6 +270,10 @@ mod comprehensive_edge_case_tests_final;
 #[cfg(test)]
 mod unique_critical_boundary_tests;
 
+/// Focused critical boundary tests v2 - Additional edge case coverage with standard assertions
+#[cfg(test)]
+mod focused_critical_boundary_tests_v2;
+
 /// Additional edge case tests for boundary conditions
 #[cfg(test)]
 mod additional_boundary_edge_case_tests {
