@@ -202,6 +202,10 @@ mod focused_comprehensive_edge_case_tests_v2;
 #[cfg(test)]
 mod focused_edge_boundary_tests;
 
+/// Comprehensive final boundary tests - advanced edge cases with standard library assertions
+#[cfg(test)]
+mod comprehensive_final_boundary_tests;
+
 /// Focused boundary case tests - specific edge scenarios with standard assertions
 #[cfg(test)]
 mod focused_boundary_case_tests;
