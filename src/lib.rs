@@ -231,6 +231,10 @@ mod ultimate_boundary_tests_new;
 #[cfg(test)]
 mod comprehensive_coverage_tests;
 
+/// Comprehensive boundary tests new - additional edge case coverage with standard assertions
+#[cfg(test)]
+mod comprehensive_boundary_tests_new;
+
 /// Critical boundary tests - final comprehensive edge case coverage
 #[cfg(test)]
 mod critical_boundary_tests_final;
