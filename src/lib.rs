@@ -20,6 +20,9 @@ mod new_edge_case_tests_extended;
 mod advanced_comprehensive_tests;
 
 #[cfg(test)]
+mod advanced_comprehensive_boundary_tests;
+
+#[cfg(test)]
 mod additional_edge_cases;
 
 #[cfg(test)]
