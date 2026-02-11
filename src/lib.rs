@@ -238,6 +238,10 @@ mod advanced_boundary_tests;
 #[cfg(test)]
 mod ultimate_boundary_tests_new;
 
+/// Advanced boundary tests new - additional edge case coverage
+#[cfg(test)]
+mod advanced_boundary_tests_new;
+
 /// Comprehensive coverage tests - boundary cases and edge scenarios
 #[cfg(test)]
 mod comprehensive_coverage_tests;
