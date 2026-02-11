@@ -1902,6 +1902,234 @@ mod tests_old {
     }
 }
 
+/// Additional edge case tests module - covering more boundary conditions
+#[cfg(test)]
+mod focused_edge_case_tests_extra {
+    use super::*;
+    use crate::ir::{Module, Value, Type, Operation, Attribute};
+    use crate::utils::{calculate_tensor_size_safe, next_power_of_2, gcd, lcm};
+
+    /// Test 1: Value with very small but non-zero dimensions
+    #[test]
+    fn test_value_minimal_nonzero_dimensions() {
+        let test_cases = [
+            vec![1],      // Single element
+            vec![1, 1],   // 1x1 matrix
+            vec![1, 1, 1], // 1x1x1 tensor
+            vec![1, 2],   // Minimal multi-element
+        ];
+
+        for shape in test_cases.iter() {
+            let value = Value {
+                name: "minimal_dim".to_string(),
+                ty: Type::F32,
+                shape: shape.to_vec(),
+            };
+
+            let product: usize = value.shape.iter().product();
+            assert!(product > 0 && product <= 2);
+        }
+    }
+
+    /// Test 2: Attribute with extreme integer values
+    #[test]
+    fn test_attribute_extreme_integers() {
+        let max_int = Attribute::Int(i64::MAX);
+        let min_int = Attribute::Int(i64::MIN);
+        let negative_one = Attribute::Int(-1);
+        let zero = Attribute::Int(0);
+        let one = Attribute::Int(1);
+
+        match max_int {
+            Attribute::Int(val) => assert_eq!(val, i64::MAX),
+            _ => panic!("Expected Int(i64::MAX)"),
+        }
+
+        match min_int {
+            Attribute::Int(val) => assert_eq!(val, i64::MIN),
+            _ => panic!("Expected Int(i64::MIN)"),
+        }
+
+        match negative_one {
+            Attribute::Int(val) => assert_eq!(val, -1),
+            _ => panic!("Expected Int(-1)"),
+        }
+
+        match zero {
+            Attribute::Int(val) => assert_eq!(val, 0),
+            _ => panic!("Expected Int(0)"),
+        }
+
+        match one {
+            Attribute::Int(val) => assert_eq!(val, 1),
+            _ => panic!("Expected Int(1)"),
+        }
+    }
+
+    /// Test 3: Value with alternating dimension pattern
+    #[test]
+    fn test_value_alternating_dimension_pattern() {
+        let patterns = [
+            vec![1, 2, 1, 2, 1],
+            vec![2, 1, 2, 1, 2],
+            vec![1, 3, 1, 3, 1],
+        ];
+
+        for shape in patterns.iter() {
+            let value = Value {
+                name: "alternating".to_string(),
+                ty: Type::I32,
+                shape: shape.to_vec(),
+            };
+
+            // Verify the pattern is preserved
+            assert_eq!(value.shape, *shape);
+
+            // Calculate product
+            let product: usize = value.shape.iter().product();
+            assert!(product > 0);
+        }
+    }
+
+    /// Test 4: Module with empty name handling
+    #[test]
+    fn test_module_empty_name() {
+        let module = Module::new("");
+        assert_eq!(module.name, "");
+        assert_eq!(module.operations.len(), 0);
+    }
+
+    /// Test 5: Operation with only attributes (no inputs or outputs)
+    #[test]
+    fn test_operation_attributes_only() {
+        let mut op = Operation::new("attr_only");
+
+        let mut attrs = std::collections::HashMap::new();
+        attrs.insert("config".to_string(), Attribute::String("test".to_string()));
+        attrs.insert("enabled".to_string(), Attribute::Bool(true));
+        attrs.insert("count".to_string(), Attribute::Int(42));
+
+        op.attributes = attrs;
+
+        assert_eq!(op.inputs.len(), 0);
+        assert_eq!(op.outputs.len(), 0);
+        assert_eq!(op.attributes.len(), 3);
+    }
+
+    /// Test 6: Value with all same dimensions (cube-like tensors)
+    #[test]
+    fn test_value_cube_like_tensors() {
+        let cubes = [
+            vec![2, 2, 2],
+            vec![3, 3, 3],
+            vec![4, 4, 4],
+            vec![5, 5, 5],
+        ];
+
+        for shape in cubes.iter() {
+            let value = Value {
+                name: "cube".to_string(),
+                ty: Type::F64,
+                shape: shape.to_vec(),
+            };
+
+            // All dimensions should be equal
+            let first_dim = shape[0];
+            for &dim in shape.iter().skip(1) {
+                assert_eq!(dim, first_dim);
+            }
+        }
+    }
+
+    /// Test 7: calculate_tensor_size_safe with edge cases
+    #[test]
+    fn test_calculate_tensor_size_safe_edge_cases() {
+        // Single element
+        assert_eq!(calculate_tensor_size_safe(&[1]), Some(1));
+
+        // Large power of 2
+        assert_eq!(calculate_tensor_size_safe(&[1024]), Some(1024));
+
+        // Multiple dimensions with ones
+        assert_eq!(calculate_tensor_size_safe(&[1, 1, 1, 1, 1]), Some(1));
+
+        // Mixed with zeros
+        assert_eq!(calculate_tensor_size_safe(&[100, 0, 100]), Some(0));
+
+        // Two dimensions with large values
+        assert_eq!(calculate_tensor_size_safe(&[1000, 1000]), Some(1_000_000));
+    }
+
+    /// Test 8: next_power_of_2 with boundary values
+    #[test]
+    fn test_next_power_of_2_boundaries() {
+        // Powers of 2 themselves
+        assert_eq!(next_power_of_2(1), 1);
+        assert_eq!(next_power_of_2(2), 2);
+        assert_eq!(next_power_of_2(4), 4);
+        assert_eq!(next_power_of_2(8), 8);
+        assert_eq!(next_power_of_2(16), 16);
+        assert_eq!(next_power_of_2(32), 32);
+
+        // Just above powers of 2
+        assert_eq!(next_power_of_2(3), 4);
+        assert_eq!(next_power_of_2(5), 8);
+        assert_eq!(next_power_of_2(9), 16);
+        assert_eq!(next_power_of_2(17), 32);
+        assert_eq!(next_power_of_2(33), 64);
+
+        // Larger values
+        assert_eq!(next_power_of_2(100), 128);
+        assert_eq!(next_power_of_2(255), 256);
+        assert_eq!(next_power_of_2(256), 256);
+        assert_eq!(next_power_of_2(257), 512);
+    }
+
+    /// Test 9: gcd and lcm with edge cases
+    #[test]
+    fn test_gcd_lcm_edge_cases() {
+        // gcd tests
+        assert_eq!(gcd(1, 1), 1);
+        assert_eq!(gcd(1, 100), 1);
+        assert_eq!(gcd(100, 1), 1);
+        assert_eq!(gcd(16, 16), 16);
+        assert_eq!(gcd(0, 5), 5);
+        assert_eq!(gcd(5, 0), 5);
+
+        // lcm tests
+        assert_eq!(lcm(1, 1), 1);
+        assert_eq!(lcm(1, 100), 100);
+        assert_eq!(lcm(100, 1), 100);
+        assert_eq!(lcm(16, 16), 16);
+        assert_eq!(lcm(0, 5), 0);
+        assert_eq!(lcm(5, 0), 0);
+        assert_eq!(lcm(12, 18), 36);
+    }
+
+    /// Test 10: Value with decreasing dimension pattern
+    #[test]
+    fn test_value_decreasing_dimension_pattern() {
+        let decreasing_shapes = [
+            vec![10, 5, 2],
+            vec![100, 50, 25, 10],
+            vec![64, 32, 16, 8, 4, 2, 1],
+        ];
+
+        for shape in decreasing_shapes.iter() {
+            let value = Value {
+                name: "decreasing".to_string(),
+                ty: Type::I64,
+                shape: shape.to_vec(),
+            };
+
+            // Verify each dimension is <= the previous one
+            for i in 1..shape.len() {
+                assert!(shape[i] <= shape[i-1]);
+            }
+        }
+    }
+}
+
 
 
 
