@@ -286,6 +286,10 @@ mod unique_critical_boundary_tests;
 #[cfg(test)]
 mod focused_critical_boundary_tests_v2;
 
+/// Enhanced boundary and edge case tests - numerical precision, overflow, and edge conditions
+#[cfg(test)]
+mod enhanced_boundary_edge_tests;
+
 /// Additional edge case tests for boundary conditions
 #[cfg(test)]
 mod additional_boundary_edge_case_tests {
