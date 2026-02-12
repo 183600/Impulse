@@ -2437,6 +2437,10 @@ mod focused_edge_case_tests_extra {
     }
 }
 
+/// Unique boundary edge tests - 覆盖尚未充分测试的边界情况
+#[cfg(test)]
+mod unique_boundary_edge_tests;
+
 /// Final boundary coverage tests - comprehensive edge cases with standard library assertions
 #[cfg(test)]
 mod final_boundary_coverage_tests;
