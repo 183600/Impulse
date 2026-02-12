@@ -207,6 +207,10 @@ mod novel_edge_case_tests;
 #[cfg(test)]
 mod extra_comprehensive_edge_case_tests;
 
+/// Extra critical edge case tests - covering numerical precision, overflow detection, and type conversion edge cases
+#[cfg(test)]
+mod extra_critical_edge_case_tests;
+
 /// Specialized edge case tests covering numerical precision and memory safety
 #[cfg(test)]
 mod specialized_edge_case_tests;
