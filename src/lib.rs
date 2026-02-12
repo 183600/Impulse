@@ -384,6 +384,10 @@ mod core_edge_case_tests;
 #[cfg(test)]
 mod essential_boundary_edge_case_tests;
 
+/// Comprehensive edge boundary tests - 覆盖更多边界情况的高级测试
+#[cfg(test)]
+mod comprehensive_edge_boundary_tests;
+
 /// Ultimate edge case coverage tests - Comprehensive boundary condition testing
 #[cfg(test)]
 mod ultimate_edge_case_coverage_tests;
