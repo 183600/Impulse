@@ -463,6 +463,10 @@ mod fundamental_safety_boundary_tests;
 #[cfg(test)]
 mod essential_comprehensive_edge_tests;
 
+/// Memory and resource boundary tests - 10 additional test cases covering memory boundaries, resource limits, and extreme scenarios
+#[cfg(test)]
+mod memory_boundary_tests;
+
 /// Advanced edge case boundary tests - 10 advanced boundary cases covering overflow, precision, and edge conditions
 #[cfg(test)]
 mod edge_case_boundary_advanced_tests;
