@@ -2457,6 +2457,10 @@ mod unique_boundary_edge_tests;
 #[cfg(test)]
 mod final_boundary_coverage_tests;
 
+/// Comprehensive integration boundary tests - integration tests across modules
+#[cfg(test)]
+mod comprehensive_integration_boundary_tests;
+
 
 
 
