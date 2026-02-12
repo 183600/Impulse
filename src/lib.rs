@@ -13,6 +13,10 @@ pub mod transforms;
 pub mod utils;
 pub mod autotuning;
 
+/// Distinctive boundary tests - 覆盖独特的边界情况，使用标准库 assert! 和 assert_eq!
+#[cfg(test)]
+mod distinctive_boundary_tests;
+
 #[cfg(test)]
 mod advanced_boundary_coverage_tests;
 
