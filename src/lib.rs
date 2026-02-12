@@ -325,6 +325,10 @@ mod critical_boundary_safety_tests;
 #[cfg(test)]
 mod targeted_boundary_edge_tests;
 
+/// Exclusive boundary edge tests - unique edge cases not covered by other test files
+#[cfg(test)]
+mod exclusive_boundary_edge_tests;
+
 /// Critical edge case tests for compiler safety and robustness
 #[cfg(test)]
 mod critical_compiler_edge_tests {
