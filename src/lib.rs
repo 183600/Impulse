@@ -2559,6 +2559,10 @@ mod focused_critical_boundary_coverage_tests;
 #[cfg(test)]
 mod new_edge_case_boundary_tests;
 
+/// Comprehensive advanced edge tests - 覆盖更多边界情况的高级测试，使用标准库 assert! 和 assert_eq! 以及 rstest 库
+#[cfg(test)]
+mod comprehensive_advanced_edge_tests;
+
 
 
 
