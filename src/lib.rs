@@ -431,6 +431,10 @@ mod comprehensive_edge_case_coverage_extended;
 #[cfg(test)]
 mod comprehensive_edge_coverage_tests;
 
+/// Focused comprehensive boundary edge tests - additional edge cases with standard library assertions
+#[cfg(test)]
+mod focused_comprehensive_boundary_edge_tests;
+
 /// Critical edge case tests for compiler safety and robustness
 #[cfg(test)]
 mod critical_compiler_edge_tests {
