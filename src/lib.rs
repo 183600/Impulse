@@ -423,6 +423,10 @@ mod ultimate_edge_case_coverage_tests;
 #[cfg(test)]
 mod comprehensive_edge_case_coverage_extended;
 
+/// Comprehensive edge coverage tests - 覆盖更多边界情况
+#[cfg(test)]
+mod comprehensive_edge_coverage_tests;
+
 /// Critical edge case tests for compiler safety and robustness
 #[cfg(test)]
 mod critical_compiler_edge_tests {
