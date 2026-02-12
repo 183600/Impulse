@@ -411,6 +411,10 @@ mod comprehensive_edge_boundary_tests;
 #[cfg(test)]
 mod focused_comprehensive_boundary_tests_final;
 
+/// Novel comprehensive boundary coverage tests - 10 edge cases focusing on memory safety, overflow, type conversions
+#[cfg(test)]
+mod novel_comprehensive_boundary_coverage_tests;
+
 /// Ultimate edge case coverage tests - Comprehensive boundary condition testing
 #[cfg(test)]
 mod ultimate_edge_case_coverage_tests;
