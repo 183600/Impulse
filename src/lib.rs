@@ -487,6 +487,10 @@ mod enhanced_comprehensive_boundary_tests;
 #[cfg(test)]
 mod comprehensive_critical_boundary_tests_v2;
 
+/// Focused critical boundary tests final - 10个关键边界情况测试，使用标准库 assert! 和 assert_eq!
+#[cfg(test)]
+mod focused_critical_boundary_tests_final;
+
 /// Advanced memory and resource boundary tests - 覆盖内存和资源边界情况
 #[cfg(test)]
 mod advanced_memory_boundary_tests;
