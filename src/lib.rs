@@ -331,6 +331,10 @@ mod additional_utility_boundary_tests;
 #[cfg(test)]
 mod critical_boundary_safety_tests;
 
+/// Advanced edge and boundary tests - numerical precision, overflow prevention, and edge conditions
+#[cfg(test)]
+mod advanced_edge_boundary_tests;
+
 /// Targeted boundary edge tests - 覆盖更多边界情况
 #[cfg(test)]
 mod targeted_boundary_edge_tests;
