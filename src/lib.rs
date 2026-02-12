@@ -349,6 +349,10 @@ mod critical_edge_boundary_coverage_tests;
 #[cfg(test)]
 mod final_critical_edge_case_tests_new;
 
+/// Focused boundary tests new - essential edge cases with standard library assertions
+#[cfg(test)]
+mod focused_boundary_tests_new;
+
 /// Focused extreme boundary tests - Additional edge cases with standard library assertions
 #[cfg(test)]
 mod focused_extreme_boundary_tests;
