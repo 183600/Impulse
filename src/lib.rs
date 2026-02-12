@@ -321,6 +321,10 @@ mod additional_utility_boundary_tests;
 #[cfg(test)]
 mod critical_boundary_safety_tests;
 
+/// Targeted boundary edge tests - 覆盖更多边界情况
+#[cfg(test)]
+mod targeted_boundary_edge_tests;
+
 /// Critical edge case tests for compiler safety and robustness
 #[cfg(test)]
 mod critical_compiler_edge_tests {
