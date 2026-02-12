@@ -329,6 +329,10 @@ mod targeted_boundary_edge_tests;
 #[cfg(test)]
 mod exclusive_boundary_edge_tests;
 
+/// Novel boundary coverage tests - Additional edge cases with standard assertions
+#[cfg(test)]
+mod novel_boundary_coverage_tests;
+
 /// Critical edge case tests for compiler safety and robustness
 #[cfg(test)]
 mod critical_compiler_edge_tests {
