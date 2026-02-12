@@ -463,6 +463,10 @@ mod fundamental_safety_boundary_tests;
 #[cfg(test)]
 mod fundamental_safety_tests;
 
+/// Final comprehensive boundary edge tests - 10个新的边界情况测试，覆盖递归嵌套、数值精度、GCD/LCM边界、Unicode字符等
+#[cfg(test)]
+mod final_comprehensive_boundary_edge_tests;
+
 /// Essential comprehensive edge tests - 10边界情况测试用例，使用标准库 assert! 和 assert_eq!
 #[cfg(test)]
 mod essential_comprehensive_edge_tests;
