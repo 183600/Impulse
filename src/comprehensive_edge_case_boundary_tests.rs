@@ -1,199 +1,219 @@
 //! Comprehensive edge case boundary tests - 覆盖更多边界情况
-//! 使用标准库 assert! 和 assert_eq! 测试独特的边界场景
+//! 使用标准库 assert! 和 assert_eq! 进行验证
 
 use crate::ir::{Module, Value, Type, Operation, Attribute, TypeExtensions};
 use std::collections::HashMap;
 
-/// Test 1: Module with maximum valid dimensions in a single tensor
+/// Test 1: 值的形状包含 usize::MAX 时，num_elements 应返回 None（溢出检测）
 #[test]
-fn test_max_valid_dimensions_tensor() {
-    // Test tensor with many dimensions that are all valid
+fn test_shape_with_usize_max() {
     let value = Value {
-        name: "high_dim_tensor".to_string(),
+        name: "overflow_test".to_string(),
         ty: Type::F32,
-        shape: vec![2, 2, 2, 2, 2, 2, 2, 2, 2, 2], // 10 dimensions
+        shape: vec![usize::MAX, 2], // 会溢出
     };
-    
-    assert_eq!(value.shape.len(), 10);
-    assert_eq!(value.num_elements(), Some(1024)); // 2^10
+    assert_eq!(value.num_elements(), None);
 }
 
-/// Test 2: Value with num_elements returning None for overflow
+/// Test 2: 空字符串名称的值和操作
 #[test]
-fn test_overflow_in_num_elements() {
-    // Create a shape that would cause overflow when multiplying
-    // Using dimensions that would exceed usize::MAX when multiplied
-    // On 64-bit systems, usize::MAX is 18446744073709551615
-    // So we need dimensions that multiply to more than that
-    let large_value = Value {
-        name: "overflow_tensor".to_string(),
+fn test_empty_string_names() {
+    let mut op = Operation::new("");
+    op.inputs.push(Value {
+        name: "".to_string(),
         ty: Type::F32,
-        shape: vec![100_000_000_000, 100_000_000_000], // Would overflow on 64-bit systems
-    };
+        shape: vec![1],
+    });
+    op.outputs.push(Value {
+        name: "".to_string(),
+        ty: Type::F32,
+        shape: vec![1],
+    });
     
-    // num_elements should return None due to overflow
-    assert_eq!(large_value.num_elements(), None);
+    assert_eq!(op.op_type, "");
+    assert_eq!(op.inputs[0].name, "");
+    assert_eq!(op.outputs[0].name, "");
 }
 
-/// Test 3: Operation with attribute keys containing special characters
+/// Test 3: 浮点属性包含负零和正零
 #[test]
-fn test_special_attribute_keys() {
-    let mut op = Operation::new("special_keys");
+fn test_float_zero_sign() {
+    let pos_zero = Attribute::Float(0.0);
+    let neg_zero = Attribute::Float(-0.0);
+    
+    match pos_zero {
+        Attribute::Float(val) => {
+            assert!(val == 0.0);
+            assert!(val.is_sign_positive());
+        }
+        _ => panic!("Expected Float attribute"),
+    }
+    
+    match neg_zero {
+        Attribute::Float(val) => {
+            assert!(val == 0.0);
+            assert!(val.is_sign_negative());
+        }
+        _ => panic!("Expected Float attribute"),
+    }
+}
+
+/// Test 4: 嵌套张量类型的深度验证
+#[test]
+fn test_deeply_nested_tensor_type() {
+    // 创建 5 层嵌套的张量类型
+    let level5 = Type::F32;
+    let level4 = Type::Tensor {
+        element_type: Box::new(level5),
+        shape: vec![2],
+    };
+    let level3 = Type::Tensor {
+        element_type: Box::new(level4),
+        shape: vec![3],
+    };
+    let level2 = Type::Tensor {
+        element_type: Box::new(level3),
+        shape: vec![4],
+    };
+    let level1 = Type::Tensor {
+        element_type: Box::new(level2),
+        shape: vec![5],
+    };
+    
+    assert!(level1.is_valid_type());
+}
+
+/// Test 5: 属性数组包含所有类型混合
+#[test]
+fn test_mixed_type_attribute_array() {
+    let mixed_array = Attribute::Array(vec![
+        Attribute::Int(i64::MAX),
+        Attribute::Float(f64::MIN),
+        Attribute::String("mixed".to_string()),
+        Attribute::Bool(false),
+        Attribute::Array(vec![Attribute::Int(1), Attribute::Int(2)]),
+    ]);
+    
+    match mixed_array {
+        Attribute::Array(arr) => {
+            assert_eq!(arr.len(), 5);
+            match &arr[4] {
+                Attribute::Array(nested) => assert_eq!(nested.len(), 2),
+                _ => panic!("Expected nested array"),
+            }
+        }
+        _ => panic!("Expected Array"),
+    }
+}
+
+/// Test 6: 单元素形状（标量）的张量
+#[test]
+fn test_single_element_shape() {
+    let single_element = Value {
+        name: "scalar".to_string(),
+        ty: Type::F32,
+        shape: vec![1],
+    };
+    assert_eq!(single_element.num_elements(), Some(1));
+    
+    let empty_shape = Value {
+        name: "empty_shape_scalar".to_string(),
+        ty: Type::F32,
+        shape: vec![],
+    };
+    assert_eq!(empty_shape.num_elements(), Some(1));
+}
+
+/// Test 7: 属性 HashMap 包含大量键值对
+#[test]
+fn test_large_attribute_hashmap() {
+    let mut op = Operation::new("large_attrs");
     let mut attrs = HashMap::new();
     
-    // Test attribute keys with various special characters
-    let special_keys = vec![
-        "key.with.dots",
-        "key-with-dashes",
-        "key_with_underscores",
-        "key:with:colons",
-        "key/with/slashes",
-        "key@with@ats",
+    // 添加 100 个属性
+    for i in 0..100 {
+        attrs.insert(format!("key_{}", i), Attribute::Int(i as i64));
+    }
+    
+    op.attributes = attrs;
+    
+    assert_eq!(op.attributes.len(), 100);
+    assert!(op.attributes.contains_key("key_0"));
+    assert!(op.attributes.contains_key("key_99"));
+}
+
+/// Test 8: 张量形状包含 1 和 0 的交替模式
+#[test]
+fn test_alternating_one_zero_shape() {
+    let patterns = vec![
+        vec![1, 0, 1, 0],
+        vec![0, 1, 0, 1],
+        vec![1, 0, 1, 0, 1],
     ];
     
-    for key in special_keys {
-        attrs.insert(key.to_string(), Attribute::Int(1));
-    }
-    
-    op.attributes = attrs;
-    
-    // Verify all keys are present
-    assert_eq!(op.attributes.len(), 6);
-    for key in &["key.with.dots", "key-with-dashes", "key_with_underscores",
-                  "key:with:colons", "key/with/slashes", "key@with@ats"] {
-        assert!(op.attributes.contains_key(*key));
-    }
-}
-
-/// Test 4: Value with all dimensions equal to 1 (scalar-like but not scalar)
-#[test]
-fn test_all_ones_shape() {
-    let value = Value {
-        name: "all_ones".to_string(),
-        ty: Type::F64,
-        shape: vec![1, 1, 1, 1, 1], // 5 dimensions all with size 1
-    };
-    
-    assert_eq!(value.shape.len(), 5);
-    assert_eq!(value.num_elements(), Some(1));
-}
-
-/// Test 5: Module with cyclic name pattern
-#[test]
-fn test_cyclic_module_names() {
-    let base_names = vec!["module_a", "module_b", "module_c"];
-    
-    for base_name in base_names {
-        let module = Module::new(base_name);
-        assert_eq!(module.name, base_name);
-        assert!(module.operations.is_empty());
-    }
-}
-
-/// Test 6: Attribute array with single element (edge case between scalar and array)
-#[test]
-fn test_single_element_array() {
-    let single_array = Attribute::Array(vec![Attribute::Int(42)]);
-    
-    match single_array {
-        Attribute::Array(arr) => {
-            assert_eq!(arr.len(), 1);
-            match arr[0] {
-                Attribute::Int(42) => {},
-                _ => panic!("Expected Int(42)"),
-            }
-        },
-        _ => panic!("Expected Array attribute"),
-    }
-}
-
-/// Test 7: Module with operations that share inputs
-#[test]
-fn test_shared_inputs_across_operations() {
-    let mut module = Module::new("shared_inputs");
-    
-    // Create a shared input
-    let shared_input = Value {
-        name: "shared_input".to_string(),
-        ty: Type::F32,
-        shape: vec![10, 10],
-    };
-    
-    // Create two operations using the same input
-    let mut op1 = Operation::new("op1");
-    op1.inputs.push(shared_input.clone());
-    op1.outputs.push(Value {
-        name: "output1".to_string(),
-        ty: Type::F32,
-        shape: vec![10, 10],
-    });
-    
-    let mut op2 = Operation::new("op2");
-    op2.inputs.push(shared_input);
-    op2.outputs.push(Value {
-        name: "output2".to_string(),
-        ty: Type::F32,
-        shape: vec![10, 10],
-    });
-    
-    module.add_operation(op1);
-    module.add_operation(op2);
-    
-    assert_eq!(module.operations.len(), 2);
-    assert_eq!(module.operations[0].inputs[0].name, "shared_input");
-    assert_eq!(module.operations[1].inputs[0].name, "shared_input");
-}
-
-/// Test 8: Type validation for deep nesting
-#[test]
-fn test_deep_nesting_type_validation() {
-    // Create a deeply nested tensor type
-    let mut nested_type: Type = Type::F32;
-    for _ in 0..20 {
-        nested_type = Type::Tensor {
-            element_type: Box::new(nested_type),
-            shape: vec![1],
+    for shape in patterns {
+        let value = Value {
+            name: "alternating".to_string(),
+            ty: Type::F32,
+            shape: shape.clone(),
         };
-    }
-    
-    // Validate the nested type
-    assert!(nested_type.is_valid_type());
-}
-
-/// Test 9: Operation with empty string in attributes
-#[test]
-fn test_empty_string_attribute() {
-    let mut op = Operation::new("empty_strings");
-    let mut attrs = HashMap::new();
-    
-    attrs.insert("empty_key".to_string(), Attribute::String("".to_string()));
-    attrs.insert("normal_key".to_string(), Attribute::String("value".to_string()));
-    
-    op.attributes = attrs;
-    
-    match op.attributes.get("empty_key") {
-        Some(Attribute::String(s)) => assert_eq!(s.len(), 0),
-        _ => panic!("Expected empty String attribute"),
-    }
-    
-    match op.attributes.get("normal_key") {
-        Some(Attribute::String(s)) => assert_eq!(s, "value"),
-        _ => panic!("Expected normal String attribute"),
+        // 包含 0 的形状应该返回 0 个元素
+        assert_eq!(value.num_elements(), Some(0));
     }
 }
 
-/// Test 10: Module with operations having no attributes
+/// Test 9: 值名称包含特殊字符和空格
 #[test]
-fn test_operations_without_attributes() {
-    let mut module = Module::new("no_attrs");
+fn test_special_characters_in_names() {
+    let special_names = vec![
+        "tensor with spaces",
+        "tab\tcharacter",
+        "null\x00character",
+        "backslash\\escape",
+        "quote\"test\"quote",
+        "emoji🔥special",
+    ];
     
-    for i in 0..5 {
-        let op = Operation::new(&format!("op_{}", i));
+    for name in special_names {
+        let value = Value {
+            name: name.to_string(),
+            ty: Type::F32,
+            shape: vec![2, 2],
+        };
+        assert_eq!(value.name, name);
+    }
+}
+
+/// Test 10: 模块包含大量操作但无输入输出
+#[test]
+fn test_module_with_many_operations_no_io() {
+    let mut module = Module::new("no_io_many_ops");
+    
+    // 添加 50 个操作
+    for i in 0..50 {
+        let mut op = Operation::new(&format!("op_{}", i));
+        // 每个操作有内部输入输出
+        op.inputs.push(Value {
+            name: format!("internal_input_{}", i),
+            ty: Type::F32,
+            shape: vec![10],
+        });
+        op.outputs.push(Value {
+            name: format!("internal_output_{}", i),
+            ty: Type::F32,
+            shape: vec![10],
+        });
         module.add_operation(op);
     }
     
-    assert_eq!(module.operations.len(), 5);
-    for op in &module.operations {
-        assert!(op.attributes.is_empty());
+    assert_eq!(module.operations.len(), 50);
+    assert_eq!(module.inputs.len(), 0);
+    assert_eq!(module.outputs.len(), 0);
+    
+    // 验证每个操作都有正确的输入输出
+    for (i, op) in module.operations.iter().enumerate() {
+        assert_eq!(op.op_type, format!("op_{}", i));
+        assert_eq!(op.inputs.len(), 1);
+        assert_eq!(op.outputs.len(), 1);
     }
 }
