@@ -2563,6 +2563,10 @@ mod new_edge_case_boundary_tests;
 #[cfg(test)]
 mod comprehensive_advanced_edge_tests;
 
+/// Comprehensive boundary edge coverage tests - 10 additional edge cases covering shared values, small dimensions, and operation chains
+#[cfg(test)]
+mod comprehensive_boundary_edge_coverage;
+
 
 
 
