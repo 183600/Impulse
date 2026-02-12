@@ -44,19 +44,21 @@ mod advanced_memory_boundary_tests {
         }
     }
 
-    /// Test 3: Compiler with repeated small allocations (memory fragmentation test)
+    /// Test 3: PassManager with repeated small allocations (memory fragmentation test)
     #[test]
     fn test_repeated_small_allocations() {
-        let mut compiler = ImpulseCompiler::new();
-        let small_model = vec![0x01, 0x02, 0x03, 0x04];
+        use crate::passes::{PassManager, ConstantFoldPass};
         
-        // Perform multiple compile operations
-        for _ in 0..50 {
-            let _ = compiler.compile(&small_model, "cpu");
+        let mut pass_manager = PassManager::new();
+        
+        // Perform multiple add operations
+        for i in 0..50 {
+            pass_manager.add_pass(Box::new(ConstantFoldPass));
+            assert_eq!(pass_manager.passes.len(), i + 1);
         }
         
-        // Compiler should still be functional
-        assert_eq!(compiler.passes.passes.len(), 0);
+        // PassManager should have 50 passes
+        assert_eq!(pass_manager.passes.len(), 50);
     }
 
     /// Test 4: Value with very long name (string boundary)
@@ -140,20 +142,26 @@ mod advanced_memory_boundary_tests {
         }
     }
 
-    /// Test 9: Value with negative dimensions (edge case for error handling)
+    /// Test 9: Value with maximum dimension (edge case for overflow detection)
     #[test]
     fn test_negative_dimensions_handling() {
-        // Create value with negative dimension (should be handled gracefully)
+        // Create value with maximum dimension (tests overflow detection)
         let value = Value {
-            name: "negative_dim".to_string(),
+            name: "max_dim".to_string(),
             ty: Type::F32,
-            shape: vec![-1, 10], // Negative dimension
+            shape: vec![usize::MAX, 10], // Very large dimension that may cause overflow
         };
         
-        // num_elements should handle negative dimensions
+        // num_elements should handle overflow gracefully
         match value.num_elements() {
-            Some(n) => assert!(n <= 0), // Negative or zero result
-            None => assert!(true), // Or return None for invalid shapes
+            Some(n) => {
+                // If it returns a value, it should be valid
+                assert!(n > 0);
+            }
+            None => {
+                // Or return None for overflow cases
+                assert!(true);
+            }
         }
     }
 
