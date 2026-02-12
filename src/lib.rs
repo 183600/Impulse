@@ -248,6 +248,10 @@ mod focused_edge_case_tests_v3;
 #[cfg(test)]
 mod boundary_tests_critical;
 
+/// Advanced critical boundary tests final - Additional edge cases for compiler robustness
+#[cfg(test)]
+mod advanced_critical_boundary_tests_final;
+
 /// Targeted comprehensive tests - focused edge case coverage with standard assertions
 #[cfg(test)]
 mod targeted_comprehensive_tests;
