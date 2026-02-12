@@ -2595,6 +2595,10 @@ mod new_edge_case_boundary_tests;
 #[cfg(test)]
 mod comprehensive_advanced_edge_tests;
 
+/// Comprehensive critical edge tests - 覆盖关键边界情况，包括内存计算、数值边界、验证边界等
+#[cfg(test)]
+mod comprehensive_critical_edge_tests;
+
 /// Comprehensive boundary edge coverage tests - 10 additional edge cases covering shared values, small dimensions, and operation chains
 #[cfg(test)]
 mod comprehensive_boundary_edge_coverage;
