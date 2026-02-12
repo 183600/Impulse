@@ -2543,6 +2543,10 @@ mod unique_edge_case_coverage_tests;
 #[cfg(test)]
 mod focused_critical_boundary_coverage_tests;
 
+/// New edge case boundary tests - 覆盖尚未充分测试的边界情况
+#[cfg(test)]
+mod new_edge_case_boundary_tests;
+
 
 
 
