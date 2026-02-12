@@ -407,6 +407,10 @@ mod focused_core_boundary_tests;
 #[cfg(test)]
 mod comprehensive_edge_boundary_tests;
 
+/// Focused comprehensive boundary tests final - additional edge cases with standard library assertions
+#[cfg(test)]
+mod focused_comprehensive_boundary_tests_final;
+
 /// Ultimate edge case coverage tests - Comprehensive boundary condition testing
 #[cfg(test)]
 mod ultimate_edge_case_coverage_tests;
