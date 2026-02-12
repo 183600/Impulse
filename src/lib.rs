@@ -2515,6 +2515,10 @@ mod comprehensive_integration_boundary_tests;
 #[cfg(test)]
 mod unique_edge_case_coverage_tests;
 
+/// Focused critical boundary coverage tests - comprehensive edge cases focusing on overflow, zero values, and large counts
+#[cfg(test)]
+mod focused_critical_boundary_coverage_tests;
+
 
 
 
