@@ -219,6 +219,10 @@ mod extra_critical_edge_case_tests;
 #[cfg(test)]
 mod specialized_edge_case_tests;
 
+/// Special critical boundary tests - 10个特别关键边界情况测试，使用标准库 assert! 和 assert_eq!
+#[cfg(test)]
+mod special_critical_boundary_tests;
+
 /// New edge boundary tests covering NaN, infinity, dynamic dimensions, and other edge cases
 #[cfg(test)]
 mod new_edge_boundary_tests;
