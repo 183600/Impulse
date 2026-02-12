@@ -439,6 +439,10 @@ mod comprehensive_edge_coverage_tests;
 #[cfg(test)]
 mod focused_comprehensive_boundary_edge_tests;
 
+/// Compiler edge case tests - additional boundary scenarios for the Impulse compiler
+#[cfg(test)]
+mod compiler_edge_case_tests;
+
 /// Critical edge case tests for compiler safety and robustness
 #[cfg(test)]
 mod critical_compiler_edge_tests {
