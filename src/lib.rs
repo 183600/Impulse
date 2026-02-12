@@ -2468,6 +2468,10 @@ mod final_boundary_coverage_tests;
 #[cfg(test)]
 mod comprehensive_integration_boundary_tests;
 
+/// Unique edge case coverage tests - 覆盖独特的边界情况，使用标准库 assert! 和 assert_eq!
+#[cfg(test)]
+mod unique_edge_case_coverage_tests;
+
 
 
 
