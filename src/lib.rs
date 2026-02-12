@@ -14,6 +14,9 @@ pub mod utils;
 pub mod autotuning;
 
 #[cfg(test)]
+mod advanced_boundary_coverage_tests;
+
+#[cfg(test)]
 mod critical_advanced_boundary_tests;
 
 #[cfg(test)]
