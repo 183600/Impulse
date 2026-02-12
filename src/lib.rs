@@ -329,6 +329,10 @@ mod targeted_boundary_edge_tests;
 #[cfg(test)]
 mod exclusive_boundary_edge_tests;
 
+/// Comprehensive edge case coverage tests - Additional boundary scenarios with standard library assertions
+#[cfg(test)]
+mod comprehensive_edge_case_coverage_tests;
+
 /// Novel boundary coverage tests - Additional edge cases with standard assertions
 #[cfg(test)]
 mod novel_boundary_coverage_tests;
