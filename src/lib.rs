@@ -365,6 +365,10 @@ mod extended_critical_boundary_tests;
 #[cfg(test)]
 mod enhanced_boundary_coverage_tests;
 
+/// Unique focused boundary tests - Additional edge cases with standard library assertions
+#[cfg(test)]
+mod unique_focused_boundary_tests;
+
 /// Critical edge case tests for compiler safety and robustness
 #[cfg(test)]
 mod critical_compiler_edge_tests {
