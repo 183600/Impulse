@@ -373,6 +373,10 @@ mod unique_focused_boundary_tests;
 #[cfg(test)]
 mod core_edge_case_tests;
 
+/// Essential boundary edge case tests - 10 critical edge cases with standard library assertions
+#[cfg(test)]
+mod essential_boundary_edge_case_tests;
+
 /// Critical edge case tests for compiler safety and robustness
 #[cfg(test)]
 mod critical_compiler_edge_tests {
