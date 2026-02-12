@@ -50,6 +50,10 @@ mod additional_boundary_tests;
 #[cfg(test)]
 mod additional_comprehensive_tests;
 
+/// Advanced comprehensive edge tests - 10 additional edge cases with standard library assertions
+#[cfg(test)]
+mod advanced_comprehensive_edge_tests;
+
 #[cfg(test)]
 mod new_more_edge_cases;
 
