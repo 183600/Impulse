@@ -451,6 +451,10 @@ mod compiler_edge_case_tests;
 #[cfg(test)]
 mod practical_boundary_edge_case_tests;
 
+/// Advanced edge case boundary tests - 10 advanced boundary cases covering overflow, precision, and edge conditions
+#[cfg(test)]
+mod edge_case_boundary_advanced_tests;
+
 /// Critical edge case tests for compiler safety and robustness
 #[cfg(test)]
 mod critical_compiler_edge_tests {
