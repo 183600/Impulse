@@ -459,6 +459,10 @@ mod practical_boundary_edge_case_tests;
 #[cfg(test)]
 mod fundamental_safety_boundary_tests;
 
+/// Fundamental safety tests - 基础安全测试，覆盖关键边界情况
+#[cfg(test)]
+mod fundamental_safety_tests;
+
 /// Essential comprehensive edge tests - 10边界情况测试用例，使用标准库 assert! 和 assert_eq!
 #[cfg(test)]
 mod essential_comprehensive_edge_tests;
