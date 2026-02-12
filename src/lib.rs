@@ -459,6 +459,10 @@ mod fundamental_safety_boundary_tests;
 #[cfg(test)]
 mod edge_case_boundary_advanced_tests;
 
+/// Enhanced comprehensive boundary tests - 覆盖更多边界情况，包括溢出、循环依赖、控制字符等
+#[cfg(test)]
+mod enhanced_comprehensive_boundary_tests;
+
 /// Critical edge case tests for compiler safety and robustness
 #[cfg(test)]
 mod critical_compiler_edge_tests {
