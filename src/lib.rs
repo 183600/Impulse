@@ -337,6 +337,10 @@ mod novel_boundary_coverage_tests;
 #[cfg(test)]
 mod mathematical_edge_case_tests;
 
+/// Critical edge boundary coverage tests - unique edge cases for compiler robustness
+#[cfg(test)]
+mod critical_edge_boundary_coverage_tests;
+
 /// Critical edge case tests for compiler safety and robustness
 #[cfg(test)]
 mod critical_compiler_edge_tests {
