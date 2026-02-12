@@ -471,6 +471,10 @@ mod memory_boundary_tests;
 #[cfg(test)]
 mod edge_case_boundary_advanced_tests;
 
+/// Comprehensive boundary tests v3 - 10边界情况测试用例，覆盖零维度、溢出、特殊浮点值、嵌套类型等
+#[cfg(test)]
+mod comprehensive_boundary_tests_v3;
+
 /// Enhanced comprehensive boundary tests - 覆盖更多边界情况，包括溢出、循环依赖、控制字符等
 #[cfg(test)]
 mod enhanced_comprehensive_boundary_tests;
