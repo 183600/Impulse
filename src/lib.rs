@@ -219,6 +219,10 @@ mod new_edge_boundary_tests;
 #[cfg(test)]
 mod focused_comprehensive_edge_case_tests_extended;
 
+/// Comprehensive unique boundary tests - 覆盖独特的边界情况
+#[cfg(test)]
+mod comprehensive_unique_boundary_tests;
+
 /// Focused comprehensive edge case tests v2 - Additional boundary scenarios
 #[cfg(test)]
 mod focused_comprehensive_edge_case_tests_v2;
