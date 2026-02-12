@@ -317,6 +317,10 @@ mod pragmatic_boundary_tests;
 #[cfg(test)]
 mod additional_utility_boundary_tests;
 
+/// Critical boundary safety tests - 10 essential edge cases for compiler robustness
+#[cfg(test)]
+mod critical_boundary_safety_tests;
+
 /// Critical edge case tests for compiler safety and robustness
 #[cfg(test)]
 mod critical_compiler_edge_tests {
