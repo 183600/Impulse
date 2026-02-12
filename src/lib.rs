@@ -447,6 +447,10 @@ mod focused_comprehensive_boundary_edge_tests;
 #[cfg(test)]
 mod compiler_edge_case_tests;
 
+/// Practical boundary edge case tests - 10实用边界情况测试，使用标准库 assert! 和 assert_eq!
+#[cfg(test)]
+mod practical_boundary_edge_case_tests;
+
 /// Critical edge case tests for compiler safety and robustness
 #[cfg(test)]
 mod critical_compiler_edge_tests {
