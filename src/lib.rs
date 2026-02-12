@@ -451,6 +451,10 @@ mod compiler_edge_case_tests;
 #[cfg(test)]
 mod practical_boundary_edge_case_tests;
 
+/// Fundamental safety boundary tests - 基础安全边界测试，覆盖编译器核心组件的关键安全边界情况
+#[cfg(test)]
+mod fundamental_safety_boundary_tests;
+
 /// Advanced edge case boundary tests - 10 advanced boundary cases covering overflow, precision, and edge conditions
 #[cfg(test)]
 mod edge_case_boundary_advanced_tests;
