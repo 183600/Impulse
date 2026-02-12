@@ -463,6 +463,10 @@ mod edge_case_boundary_advanced_tests;
 #[cfg(test)]
 mod enhanced_comprehensive_boundary_tests;
 
+/// Comprehensive critical boundary tests v2 - 10个新测试用例，覆盖溢出保护、递归验证、特殊浮点值等边界情况
+#[cfg(test)]
+mod comprehensive_critical_boundary_tests_v2;
+
 /// Critical edge case tests for compiler safety and robustness
 #[cfg(test)]
 mod critical_compiler_edge_tests {
