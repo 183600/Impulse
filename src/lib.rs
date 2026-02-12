@@ -419,6 +419,10 @@ mod novel_comprehensive_boundary_coverage_tests;
 #[cfg(test)]
 mod ultimate_edge_case_coverage_tests;
 
+/// Extended comprehensive edge case coverage tests - Additional boundary scenarios with standard library assertions
+#[cfg(test)]
+mod comprehensive_edge_case_coverage_extended;
+
 /// Critical edge case tests for compiler safety and robustness
 #[cfg(test)]
 mod critical_compiler_edge_tests {
