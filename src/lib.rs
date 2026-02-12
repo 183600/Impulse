@@ -487,6 +487,10 @@ mod enhanced_comprehensive_boundary_tests;
 #[cfg(test)]
 mod comprehensive_critical_boundary_tests_v2;
 
+/// Advanced memory and resource boundary tests - 覆盖内存和资源边界情况
+#[cfg(test)]
+mod advanced_memory_boundary_tests;
+
 /// Critical edge case tests for compiler safety and robustness
 #[cfg(test)]
 mod critical_compiler_edge_tests {
