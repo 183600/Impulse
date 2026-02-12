@@ -341,6 +341,10 @@ mod mathematical_edge_case_tests;
 #[cfg(test)]
 mod critical_edge_boundary_coverage_tests;
 
+/// Final critical edge case tests new - additional boundary scenarios with standard library assertions
+#[cfg(test)]
+mod final_critical_edge_case_tests_new;
+
 /// Critical edge case tests for compiler safety and robustness
 #[cfg(test)]
 mod critical_compiler_edge_tests {
